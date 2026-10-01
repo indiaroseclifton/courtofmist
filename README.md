@@ -51,6 +51,10 @@ A desktop GPU is recommended. Each frame draws the scene twice, once for the riv
 
 Winnow marks are learned by walking to them. Trust appears on the map's ledger, and a court's army only marches with work done on that court's land.
 
+## Feyre's model
+
+`docs/reference/` holds the character turnaround Feyre is built from. From those four views, Higgsfield (Meshy multi-image-to-3D) produces a textured, PBR, rigged GLB with a walk cycle. Save it as `public/models/feyre.glb`. The game then uses it in place of the procedural figure, plays the walk cycle at a speed matched to her movement, and attaches her wings to its shoulders. The Blender scene takes the same file with `--feyre public/models/feyre.glb`. Without the file, both fall back to the procedural figure.
+
 ## Path-traced frames (Blender Cycles)
 
 `blender/velaris_quay.py` builds the same Velaris quay in Blender from code and path-traces it with Cycles. The scene includes:

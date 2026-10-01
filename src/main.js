@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { buildVelaris, RIVER_HALF, STAIR, WATER_Y, groundHeight } from './world/velaris.js';
 import { buildSky } from './world/sky.js';
 import { buildHuman, animateHuman } from './world/character.js';
+import { loadFeyreModel } from './world/feyreModel.js';
 import { buildPost } from './render/post.js';
 import { Player } from './game/player.js';
 import { buildCrowd } from './game/npcs.js';
@@ -95,6 +96,7 @@ const feyre = buildHuman({
 });
 scene.add(feyre.root);
 feyre.hair.attach(scene);
+const feyreModel = loadFeyreModel(feyre);
 const player = new Player(feyre, world.colliders, state);
 const crowd = buildCrowd(scene, 30);
 const ui = new UI();
@@ -181,6 +183,7 @@ function frame(dt, draw = true) {
   feyre.root.position.copy(player.pos);
   if (player.boat) feyre.root.position.y = WATER_Y + 0.2;
   feyre.root.rotation.y = player.heading;
+  feyreModel.update(dt, res.speed);
   animateHuman(feyre, dt, { speed: res.speed, accel: player.accel, turn: player.turn, flying: state.flying, stairs: player.stairs, t, talking: 0 });
   if (player.boat) { // poling stance
     for (const L of feyre.legs) { L.hip.rotation.x = -0.15; L.knee.rotation.x = 0.3; }
@@ -254,7 +257,7 @@ function frame(dt, draw = true) {
   post.setFocus(focusDist, convoNpc ? 0.0026 : 0.0014);
 
   // hair after the body has moved
-  feyre.hair.step(dt, moonDir, camera.position, wind.clone().multiplyScalar(state.flying ? 8 : 1 + Math.sin(t * 0.7)));
+  if (!feyreModel.loaded) feyre.hair.step(dt, moonDir, camera.position, wind.clone().multiplyScalar(state.flying ? 8 : 1 + Math.sin(t * 0.7)));
 
   // moonlight follows the player; lantern lights follow the camera
   moon.position.copy(player.pos).addScaledVector(moonDir, 120);

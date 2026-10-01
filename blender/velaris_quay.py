@@ -26,6 +26,8 @@ ap.add_argument('--w', type=int, default=1920)
 ap.add_argument('--h', type=int, default=1080)
 ap.add_argument('--shot', default='quay', choices=['quay', 'wide'])
 ap.add_argument('--blend', default='')
+ap.add_argument('--feyre', default='', help='rigged GLB of Feyre to use instead of the procedural figure')
+ap.add_argument('--frame', type=int, default=12, help='frame of the GLB walk cycle to pose her on')
 args = ap.parse_args(argv)
 
 rnd = random.Random(7)
@@ -798,8 +800,40 @@ def human(name, root, heading, height=1.68, stride=0.0, clothes=None, hair_len=0
 
 
 # Feyre, mid-stride, the camera at her right shoulder
-feyre = human('Feyre', (0, 0, 0), -math.pi / 2, 1.68, stride=0.7, hair_len=0.5, strands=True)
+def import_feyre(path, height=1.68):
+    """Bring in an authored, rigged Feyre (e.g. the Higgsfield model built from docs/reference)."""
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=path)
+    new = [o for o in bpy.data.objects if o not in before]
+    root = bpy.data.objects.new('Feyre', None)
+    link(root)
+    for o in new:
+        if o.parent is None:
+            o.parent = root
+    scene.frame_set(args.frame)
+    bpy.context.view_layer.update()
+    zs = [ (o.matrix_world @ Vector(c)).z for o in new if o.type == 'MESH' for c in o.bound_box]
+    k = height / max(0.01, max(zs) - min(zs))
+    root.scale = (k, k, k)
+    root.location.z = -min(zs) * k
+    # glTF faces +Z, which imports as -Y; turn her to walk +X along the quay
+    root.rotation_euler = (0, 0, math.pi / 2)
+    for o in new:
+        if o.type == 'MESH':
+            for slot in o.material_slots:
+                if slot.material and slot.material.node_tree:
+                    p = slot.material.node_tree.nodes.get('Principled BSDF')
+                    if p and 'Subsurface Weight' in p.inputs:
+                        p.inputs['Subsurface Weight'].default_value = 0.08
+    return root
+
+
+if args.feyre:
+    feyre = import_feyre(args.feyre)
+else:
+    feyre = human('Feyre', (0, 0, 0), -math.pi / 2, 1.68, stride=0.7, hair_len=0.5, strands=True)
 # bow across her back: yew limb, linen string; a quiver at her hip
+PROPS = not args.feyre
 curve = bpy.data.curves.new('BowCurve', 'CURVE')
 curve.dimensions = '3D'
 curve.bevel_depth = 0.011
@@ -834,6 +868,10 @@ for k in range(6):
 belt = cyl('Belt', 0.175, 0.07, (0, 0, 0.985), M['boots'], 32)
 belt.scale = (1.0, 0.82, 1)
 belt.parent = feyre
+if not PROPS:
+    # the authored model carries her own bow, belts and pouches
+    for o in [o for o in feyre.children if o.name.split('.')[0] in ('Bow', 'Bowstring', 'Quiver', 'Shaft', 'Fletch', 'Belt')]:
+        bpy.data.objects.remove(o, do_unlink=True)
 
 # townsfolk along the quay and at the stalls
 palette = [M['linen'], *SILKS]
