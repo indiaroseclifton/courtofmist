@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Court of Mist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Homemade+Apple&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/ui/style.css" />
+</head>
+<body>
+  <canvas id="view"></canvas>
+
+  <!-- Diegetic layer: nothing here is chrome. Subtitles, paper, and the map on the table. -->
+  <div id="subtitle" aria-live="polite"></div>
+  <div id="prompt"></div>
+  <div id="slips" hidden></div>
+  <div id="table" hidden>
+    <div class="board">
+      <canvas id="map" width="1600" height="1000"></canvas>
+      <div id="ledger"></div>
+    </div>
+  </div>
+  <div id="fade"></div>
+
+  <div id="title">
+    <h1>Court of Mist</h1>
+    <p class="sub">Velaris, a night in the open city</p>
+    <p class="keys">
+      mouse to look · W A S D to walk · shift to run · E to speak or act<br />
+      F to open your wings · B for bargain slips · M for the painted map · Esc to put things away
+    </p>
+    <p class="begin">click to begin</p>
+    <p class="fine">A non-commercial fan prototype. Prythian and its people belong to Sarah J. Maas.</p>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

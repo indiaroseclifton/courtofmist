@@ -1,0 +1,101 @@
+:root {
+  --ink: #1d1712;
+  --ink-faded: #4a3d30;
+  --paper: #e9dfc9;
+  --paper-shade: #d6c7a6;
+  --sub: #efe8da;
+  --serif: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
+  --hand: 'Homemade Apple', 'Bradley Hand', 'Segoe Script', cursive;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; background: #05070b; overflow: hidden; color: var(--sub); font-family: var(--serif); }
+#view { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+
+/* Subtitles: words under the picture, not a dialogue box. */
+#subtitle {
+  position: fixed; left: 50%; bottom: 7vh; transform: translateX(-50%);
+  width: min(900px, 86vw); text-align: center; font-size: clamp(17px, 1.45vw, 26px); line-height: 1.35;
+  text-shadow: 0 1px 2px rgba(0,0,0,.9), 0 0 18px rgba(0,0,0,.65);
+  opacity: 0; transition: opacity .35s ease; pointer-events: none;
+}
+#subtitle.on { opacity: 1; }
+#subtitle .who { font-variant: small-caps; letter-spacing: .08em; opacity: .75; margin-right: .4em; }
+#subtitle ol { list-style: none; padding: 0; margin: .7em 0 0; }
+#subtitle li { margin: .25em 0; opacity: .92; font-style: italic; }
+#subtitle li .n { font-style: normal; opacity: .6; margin-right: .5em; }
+
+#prompt {
+  position: fixed; left: 50%; bottom: 3.2vh; transform: translateX(-50%);
+  font-style: italic; font-size: clamp(14px, 1.05vw, 19px); opacity: 0; transition: opacity .25s;
+  text-shadow: 0 1px 2px #000; pointer-events: none;
+}
+#prompt.on { opacity: .8; }
+
+/* Bargain slips: torn paper in the hand, the ink of whoever wrote them. */
+#slips {
+  position: fixed; inset: 0; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 28px;
+  padding: 6vh 6vw; background: radial-gradient(ellipse at center, rgba(0,0,0,.35), rgba(0,0,0,.75));
+}
+.slip {
+  width: 300px; min-height: 170px; padding: 26px 26px 22px; color: var(--ink);
+  font-family: var(--hand); font-size: 15px; line-height: 1.75;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(255,255,255,.35), transparent 60%),
+    radial-gradient(ellipse at 80% 90%, rgba(120,90,40,.25), transparent 55%),
+    linear-gradient(175deg, var(--paper), var(--paper-shade));
+  clip-path: polygon(0 3%, 6% 0, 14% 2%, 25% 0, 38% 2%, 52% 0, 66% 1.5%, 80% 0, 92% 2%, 100% 0, 99% 30%, 100% 62%, 98.5% 100%, 84% 98%, 70% 100%, 55% 98.5%, 40% 100%, 24% 98%, 10% 100%, 0 98%, 1.5% 60%, 0 30%);
+  box-shadow: 0 18px 40px rgba(0,0,0,.6);
+  filter: sepia(.15) contrast(1.02);
+}
+.slip:nth-child(3n) { transform: rotate(-2.2deg); }
+.slip:nth-child(3n+1) { transform: rotate(1.6deg); }
+.slip:nth-child(3n+2) { transform: rotate(-.6deg) translateY(10px); }
+.slip .to { font-size: 13px; color: var(--ink-faded); }
+.slip.settled .body { text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: rgba(30,20,15,.8); }
+.slip .seal { display: block; margin-top: 10px; font-size: 12px; color: #6d2418; }
+.slip.empty { font-family: var(--serif); font-style: italic; font-size: 20px; text-align: center; padding-top: 60px; }
+
+/* The war table: you look down at a painted map on wood. */
+#table {
+  position: fixed; inset: 0; display: grid; place-items: center; perspective: 1600px;
+  background:
+    repeating-linear-gradient(92deg, rgba(0,0,0,.18) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(88deg, rgba(255,200,140,.04) 0 1px, transparent 1px 23px),
+    radial-gradient(ellipse at 50% 40%, #3b2618, #120a06 80%);
+}
+#table .board { position: relative; transform: rotateX(12deg) translateY(-1vh); transform-style: preserve-3d; display: flex; gap: 22px; align-items: flex-start; }
+#map { width: min(64vw, 1100px); height: auto; box-shadow: 0 30px 60px rgba(0,0,0,.7); cursor: crosshair; }
+#ledger {
+  width: 280px; padding: 22px 22px; color: var(--ink); font-family: var(--hand); font-size: 13px; line-height: 1.8;
+  background: linear-gradient(175deg, var(--paper), var(--paper-shade)); box-shadow: 0 20px 40px rgba(0,0,0,.6);
+  transform: rotate(2deg) translateZ(4px);
+}
+#ledger h3 { font-family: var(--serif); font-weight: 500; font-size: 18px; margin: 0 0 6px; }
+#ledger .court { display: flex; justify-content: space-between; }
+#ledger .notch { letter-spacing: 2px; }
+#ledger .absent { color: #7a2a1c; }
+#ledger hr { border: 0; border-top: 1px solid rgba(40,30,20,.3); margin: 10px 0; }
+
+#fade { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .5s ease; }
+#fade.on { opacity: 1; }
+
+#title {
+  position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at 50% 60%, rgba(4,6,10,.35), rgba(4,6,10,.9)); text-align: center; cursor: pointer;
+}
+#title h1 { font-weight: 400; font-size: clamp(48px, 7vw, 112px); letter-spacing: .14em; margin: 0; text-transform: uppercase; }
+#title .sub { font-style: italic; font-size: clamp(16px, 1.6vw, 26px); opacity: .8; margin: .4em 0 2.4em; }
+#title .keys { font-size: clamp(13px, 1vw, 17px); opacity: .62; line-height: 1.9; }
+#title .begin { margin-top: 2em; font-style: italic; opacity: .85; animation: breathe 3.2s ease-in-out infinite; }
+#title .fine { position: absolute; bottom: 18px; font-size: 12px; opacity: .4; }
+@keyframes breathe { 50% { opacity: .35; } }
+
+body.capture #title, body.capture #prompt { display: none; }
+
+@media (max-width: 720px) {
+  #table .board { flex-direction: column; transform: none; }
+  #map { width: 92vw; }
+  #ledger { width: 92vw; transform: none; }
+}
