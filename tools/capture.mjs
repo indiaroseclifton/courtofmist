@@ -24,7 +24,7 @@ for (const shot of shots) {
   await page.goto(`http://localhost:5199/?shot=${shot}&w=${w}&h=${h}&warm=${warm}`, { waitUntil: 'commit', timeout: 600000 });
   await page.waitForFunction(() => window.__ready === true, null, { timeout: 600000 });
   await page.waitForTimeout(800); // fonts and DOM transitions
-  await page.screenshot({ path: `${out}/${shot}.png` });
+  await page.screenshot({ path: `${out}/${shot}.png`, timeout: 300000 });
   console.log(`${shot}: ${((Date.now() - t0) / 1000).toFixed(1)}s`);
   await page.close();
 }
