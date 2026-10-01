@@ -51,6 +51,27 @@ A desktop GPU is recommended. Each frame draws the scene twice, once for the riv
 
 Winnow marks are learned by walking to them. Trust appears on the map's ledger, and a court's army only marches with work done on that court's land.
 
+## Path-traced frames (Blender Cycles)
+
+`blender/velaris_quay.py` builds the same Velaris quay in Blender from code and path-traces it with Cycles. The scene includes:
+
+- hand-laid wet setts with puddles
+- the Sidra
+- lit townhouses on both banks, and a stone bridge
+- lanterns in volumetric river mist
+- a silk-awning market
+- Feyre with about 9,000 draped strand curves on the Principled Hair BSDF, skin with subsurface scattering, a linen shirt, a leather vest, a bow and boots
+
+It renders through a 35 mm lens at f/2 with AgX tone mapping.
+
+```bash
+pip install bpy==5.0.1          # Blender as a Python module (Python 3.11), or use a Blender install:
+python blender/velaris_quay.py --out docs/blender/velaris_quay.png --samples 160 --w 1920 --h 1080 --blend velaris_quay.blend
+blender -b -P blender/velaris_quay.py -- --out docs/blender/velaris_quay.png
+```
+
+![Velaris quay, Cycles](docs/blender/velaris_quay.png)
+
 ## Staged frames
 
 ```bash
