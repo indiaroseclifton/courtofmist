@@ -80,7 +80,7 @@ export function mortalVillage(ctx) {
     const p = person(R, look('villager', { shirt: [0x5a5048, 0x4a4238, 0x6a5a48][i % 3], robe: i % 2 ? 0x4a4038 : null }), -10 + i * 3, 6 - i, r() * 6);
     route(p, [[-12 + i, 8], [10 - i, -6], [i * 2, 12]]);
   }
-  R.named.nesta = person(R, look('nesta', { robe: 0x4a4a52 }), CX + 2, CZ + 5, Math.PI);
+  R.named.nesta = person(R, look('nesta', { robe: 0x4a4a52, model: null }), CX + 2, CZ + 5, Math.PI);
   R.named.elain = person(R, look('elain', { robe: 0x8a7a6a }), CX - 3, CZ + 4.5, 0.6);
   R.named.father = person(R, look('father'), CX + 1, CZ + 3.6, 0.2);
   R.named.family = person(R, look('villager', { shirt: 0x6a5a48, height: 1.72 }), CX + 4, CZ + 7, Math.PI);

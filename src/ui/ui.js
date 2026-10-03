@@ -1,6 +1,25 @@
 // Diegetic interface: subtitles, paper slips, a painted map on a table. No bars, no arrows.
 import { COURT_NAMES, WINNOW_MARKS, REGIONS } from '../core/content.js';
 import { ARMY_TRUST } from '../core/state.js';
+import { HF } from '../content/hf_assets.js';
+
+// Voiced lines (Higgsfield text-to-speech), keyed by speaker and plain text.
+const plain = (t) => t.replace(/<[^>]+>/g, '');
+let voiceEl = null;
+function speak(who, text) {
+  const url = who && HF.voices[`${who}|${plain(text)}`];
+  if (voiceEl) { voiceEl.pause(); voiceEl = null; }
+  if (!url) return null;
+  const a = new Audio(url);
+  a.volume = 0.95;
+  voiceEl = a;
+  // resolves with the clip's length in ms once known (or null if it won't play)
+  return new Promise((res) => {
+    a.addEventListener('loadedmetadata', () => res(a.duration * 1000), { once: true });
+    a.addEventListener('error', () => res(null), { once: true });
+    a.play().catch(() => res(null));
+  });
+}
 
 const $ = (id) => document.getElementById(id);
 
@@ -97,9 +116,13 @@ export class UI {
     this.sub.innerHTML = `${who ? `<span class="who">${who}</span>` : ''}${text}`;
     this.sub.classList.add('on');
     const dur = this.fast ? 1 : ms ?? Math.max(2200, text.length * 55);
+    const voice = this.fast ? null : speak(who, text);
     return new Promise((res) => {
       this.lineResolve = res;
-      this.lineTimer = setTimeout(() => { this.lineResolve = null; res(); }, dur);
+      const end = (d) => { clearTimeout(this.lineTimer); this.lineTimer = setTimeout(() => { this.lineResolve = null; res(); }, d); };
+      end(dur);
+      // a spoken line holds until the voice has finished, plus a breath
+      voice?.then((v) => { if (v && this.lineResolve === res) end(Math.max(dur, v + 450)); });
     });
   }
 
@@ -119,6 +142,7 @@ export class UI {
     this.sub.innerHTML = `${who ? `<span class="who">${who}</span>` : ''}${text}<ol>${options
       .map((o, i) => `<li><span class="n">${i + 1}</span>${o}</li>`).join('')}</ol>`;
     this.sub.classList.add('on');
+    if (!this.fast) speak(who, text);
     if (this.fast) { this.choiceResolve = null; return new Promise((res) => setTimeout(() => res(this.autoChoice ?? 0), 1)); }
     return new Promise((res) => { this.choiceResolve = (i) => { this.clearSay(); res(i); }; });
   }

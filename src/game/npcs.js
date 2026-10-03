@@ -2,6 +2,7 @@
 // stop at stalls. Named people stand where their stories are and turn to face you.
 import * as THREE from 'three';
 import { buildHuman, animateHuman } from '../world/character.js';
+import { attachAuthored } from '../world/authored.js';
 import { RIVER_HALF, BRIDGES, mulberry } from '../world/velaris.js';
 
 const SKINS = [0xe2b49a, 0xc98e6c, 0x9a6448, 0x6e4430, 0xf0c8b0, 0xb07656, 0x553222];
@@ -26,6 +27,8 @@ export class Person {
     this.lookAt = null;
     scene.add(this.rig.root);
     if (this.rig.hair) this.rig.hair.attach(scene);
+    // the principal cast have authored bodies (Higgsfield); everyone else stays procedural
+    this.authored = opts.model ? attachAuthored(this.rig, opts.model, { height: opts.height }) : null;
   }
 
   goTo(p) { this.target = p.clone(); }
@@ -66,6 +69,7 @@ export class Person {
     this.rig.root.position.copy(this.pos);
     this.rig.root.rotation.y = this.heading;
     animateHuman(this.rig, dt, { speed: this.speed, accel, turn, t, talking: this.talking, stairs, flying: !!this.flying });
+    this.authored?.update(dt, this.flying || this.kneel || this.downed ? 0 : this.speed);
     if (this.kneel) {
       this.rig.hips.position.y = 0.5;
       for (const L of this.rig.legs) { L.hip.rotation.x = -1.4 + (L.side > 0 ? 0 : 1.3); L.knee.rotation.x = L.side > 0 ? 1.6 : 2.4; }

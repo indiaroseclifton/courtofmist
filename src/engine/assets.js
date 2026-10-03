@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { HF } from '../content/hf_assets.js';
 
 const BASE = import.meta.env.BASE_URL;
 const texLoader = new THREE.TextureLoader();
@@ -18,10 +19,15 @@ export function whenLoaded() {
 
 export function setAnisotropy(renderer) { maxAniso = renderer.capabilities.getMaxAnisotropy(); }
 
-function baseTexture(url, srgb) {
+function baseTexture(url, srgb, fallback) {
   if (!images.has(url)) {
     const fin = track();
-    const t = texLoader.load(url, fin, undefined, fin); // a missing map leaves the material flat
+    // a remote (Higgsfield) map that can't be reached falls back to the local one; a missing
+    // local map leaves the material flat
+    const t = texLoader.load(url, fin, undefined, () => {
+      if (!fallback) return fin();
+      texLoader.load(fallback, (tx) => { t.image = tx.image; t.needsUpdate = true; fin(); }, undefined, fin);
+    });
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
     t.anisotropy = maxAniso;
@@ -30,8 +36,8 @@ function baseTexture(url, srgb) {
   return images.get(url);
 }
 
-function repeated(url, srgb, rx, ry) {
-  const t = baseTexture(url, srgb).clone(); // shares the image, owns its repeat
+function repeated(url, srgb, rx, ry, fallback) {
+  const t = baseTexture(url, srgb, fallback).clone(); // shares the image, owns its repeat
   t.repeat.set(rx, ry);
   t.anisotropy = maxAniso;
   t.needsUpdate = true;
@@ -45,13 +51,17 @@ const matCache = new Map();
  */
 export function pbr(name, o = {}) {
   const [rx, ry] = o.repeat ?? [1, 1];
-  const key = JSON.stringify([name, rx, ry, o.color, o.roughness, o.normalScale, o.physical, o.emissive, o.side, o.metalness]);
+  const key = JSON.stringify([name, rx, ry, o.color, o.roughness, o.normalScale, o.physical, o.emissive, o.side, o.metalness, o.roughFloor]);
   if (matCache.has(key)) return matCache.get(key);
   const p = `${BASE}textures/${name}`;
+  // A photographic set generated with Higgsfield, when the manifest has one: albedo and normal
+  // come from its CDN (falling back to the local set), and roughness is read from the albedo.
+  const hf = HF.textures[name];
+  const pick = (kind, srgb) => repeated(hf?.[kind] ?? `${p}_${kind}.jpg`, srgb, rx, ry, hf?.[kind] ? `${p}_${kind}.jpg` : null);
   const params = {
-    map: repeated(`${p}_albedo.jpg`, true, rx, ry),
-    roughnessMap: repeated(`${p}_rough.jpg`, false, rx, ry),
-    normalMap: repeated(`${p}_normal.jpg`, false, rx, ry),
+    map: pick('albedo', true),
+    roughnessMap: hf ? null : pick('rough', false),
+    normalMap: pick('normal', false),
     normalScale: new THREE.Vector2(o.normalScale ?? 1, o.normalScale ?? 1),
     color: o.color ?? 0xffffff,
     roughness: o.roughness ?? 1,
@@ -60,6 +70,18 @@ export function pbr(name, o = {}) {
   };
   if (o.emissive) Object.assign(params, o.emissive);
   const m = o.physical ? new THREE.MeshPhysicalMaterial({ ...params, ...o.physical }) : new THREE.MeshStandardMaterial(params);
+  const derive = hf ? 1 : 0, rb = hf?.rb ?? 0.7, rs = hf?.rs ?? 0.2, floor = o.roughFloor ?? 0;
+  if (derive || floor) {
+    m.onBeforeCompile = (sh) => {
+      Object.assign(sh.uniforms, { uDerive: { value: derive }, uRB: { value: rb }, uRS: { value: rs }, uFloor: { value: floor } });
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', '#include <common>\nuniform float uDerive, uRB, uRS, uFloor;')
+        .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+if (uDerive > 0.5) { float lum = sqrt(dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722))); roughnessFactor = clamp(uRB + (0.5 - lum) * uRS * 2.0, 0.05, 1.0) * roughness; }
+roughnessFactor = max(roughnessFactor, uFloor); // specular anti-aliasing where asked`);
+    };
+    m.customProgramCacheKey = () => 'pbrRough1';
+  }
   matCache.set(key, m);
   return m;
 }

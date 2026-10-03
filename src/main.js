@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { buildSky } from './world/sky.js';
 import { buildHuman, animateHuman } from './world/character.js';
-import { loadFeyreModel } from './world/feyreModel.js';
+import { attachAuthored } from './world/authored.js';
 import { weather } from './world/kit.js';
 import { buildPost } from './render/post.js';
 import { Player } from './game/player.js';
@@ -87,7 +87,7 @@ try {
 let feyre = buildHuman({ ...CAST.feyre, strands: true, bow: true, wings: true });
 scene.add(feyre.root);
 feyre.hair.attach(scene);
-let feyreModel = loadFeyreModel(feyre);
+let feyreModel = attachAuthored(feyre, 'feyre', { height: CAST.feyre.height });
 const player = new Player(feyre, state);
 const ui = new UI();
 const sound = new Sound();
@@ -197,7 +197,7 @@ ctx.playAs = (who) => {
   scene.add(feyre.root);
   feyre.hair.attach(scene);
   player.rig = feyre;
-  feyreModel = who === 'feyre' ? loadFeyreModel(feyre) : { loaded: false, update() {} };
+  feyreModel = attachAuthored(feyre, who, { height: CAST[who].height });
   ctx.playing = who;
 };
 ctx.playing = 'feyre';
@@ -227,7 +227,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyB') ui.toggleSlips(state);
   if (e.code === 'KeyM') { ui.toggleTable(state, undefined, ctx); if (!ui.tableEl.hidden) document.exitPointerLock?.(); }
   if (e.code === 'KeyJ') ui.toggleJournal(ctx.story);
-  if (e.code === 'KeyQ') ctx.combat.power();
+  if (e.code === 'KeyQ') { const ready = ctx.combat.powerCooldown <= 0; ctx.combat.power(); if (ready && ctx.combat.powerCooldown > 0) feyreModel.play('slash'); }
   if (e.code === 'Escape') { ui.closeAll(); }
   if (e.code === 'KeyF' && !player.locked) {
     if (state.flying) player.land();
@@ -240,10 +240,14 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => { if (keymap[e.code]) input[keymap[e.code]] = 0; });
 canvas.addEventListener('mousedown', (e) => {
   if (document.pointerLockElement !== canvas || ui.overlayOpen) return;
-  if (e.button === 2) ctx.combat.aim(true);
-  if (e.button === 0) ctx.combat.attack();
+  if (e.button === 2) { ctx.combat.aim(true); if (ctx.combat.aiming) feyreModel.aim(true); }
+  if (e.button === 0) {
+    const shot = ctx.combat.aiming && ctx.combat.draw >= 0.35, swing = !ctx.combat.aiming && ctx.combat.swing <= 0;
+    ctx.combat.attack();
+    if (shot) feyreModel.play('shoot'); else if (swing && !player.locked && !ctx.busy) feyreModel.play('slash');
+  }
 });
-window.addEventListener('mouseup', (e) => { if (e.button === 2) ctx.combat.aim(false); });
+window.addEventListener('mouseup', (e) => { if (e.button === 2) { ctx.combat.aim(false); feyreModel.aim(false); } });
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 const title = document.getElementById('title');
 title?.addEventListener('click', (e) => {
@@ -290,7 +294,7 @@ function frame(dt, draw = true) {
   feyre.root.position.copy(player.pos);
   if (player.boat) feyre.root.position.y = (region.water?.y ?? 0) + 0.2;
   feyre.root.rotation.y = player.heading;
-  feyreModel.update(dt, res.speed);
+  feyreModel.update(dt, state.flying ? 0 : player.boat ? 0 : res.speed);
   animateHuman(feyre, dt, { speed: res.speed, accel: player.accel, turn: player.turn, flying: state.flying, stairs: player.stairs, t, talking: 0 });
   if (player.boat) {
     for (const L of feyre.legs) { L.hip.rotation.x = -0.15; L.knee.rotation.x = 0.3; }
