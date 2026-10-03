@@ -2,7 +2,7 @@
 // Overcast daylight, mud on the gravel and on the lowest blooms.
 import * as THREE from 'three';
 import { makeRegion, person, route, act, v3 } from './region.js';
-import { terrain, hills, forest, house, box, column, roses, torch, rand, collider } from '../world/kit.js';
+import { terrain, hills, forest, house, box, column, roses, torch, rand, collider, grassField } from '../world/kit.js';
 import { pbr, plain } from '../engine/assets.js';
 import { look } from '../game/cast.js';
 
@@ -52,6 +52,11 @@ export function springManor(ctx) {
   for (let x = -34; x < 34; x += 1.6) for (const z of [26.5, 33.5]) if (Math.abs(x) > 6) spots.push(v3(x, ground(x, z), z + (r() - 0.5) * 0.5));
   for (let i = 0; i < 60; i++) { const x = -40 + r() * 80, z = 40 + r() * 30; spots.push(v3(x, ground(x, z), z)); }
   roses(R.root, spots, { colors: [0x8a0f1e, 0xb02a3a, 0xd8a0a8, 0xe8d0c0], mud: true });
+
+  // lawn: tufts around the gardens, thinning where feet have worn the walks
+  const sway = grassField(R.root, { ground, area: [-90, 90, -10, 90], count: 26000, seed: 22, color: 0xd8e0c0,
+    avoid: (x, z) => (Math.abs(x) < 4 && z < 62) || (Math.abs(z - 30) < 3.5 && Math.abs(x) < 36) || Math.hypot(x, z - 30) < 5 || (Math.abs(Math.abs(x) - 25) < 3 && Math.abs(z - 30) < 16) });
+  R.updaters.push((dt, t) => sway(t));
 
   // the stables
   house(R.root, R.colliders, { x: -60, z: 0, w: 18, d: 10, h: 5, facing: Math.PI / 2, wall: 'timber', roof: 'slate', lit: 0.1, seed: 8 });

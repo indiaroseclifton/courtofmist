@@ -2,6 +2,7 @@
 // the same input, physics, crowd and camera; only the starting positions are chosen.
 import * as THREE from 'three';
 import { STAIR, WATER_Y } from './world/velaris.js';
+import { whenLoaded } from './engine/assets.js';
 
 export async function runCapture(api, { shot, record, warm }) {
   const { ctx, frame, input, cam, player, state, ui } = api;
@@ -70,6 +71,8 @@ export async function runCapture(api, { shot, record, warm }) {
     const [clip, where] = record.split(':');
     if (where) await stage(`region:${where}`); else await stage(clip === 'flight' ? 'market' : clip);
     if (clip === 'flight') at(-20, 17, Math.PI / 2 + 0.6, -Math.PI / 2 - 0.6, 0.2);
+    frame(1 / 30);
+    await whenLoaded();
     for (let i = 0; i < 30; i++) frame(1 / 30, false);
     let ct = 0;
     window.__step = () => { (SCRIPTS[clip] ?? SCRIPTS.walk)(ct); frame(1 / 30); ct += 1 / 30; return true; };
@@ -78,6 +81,8 @@ export async function runCapture(api, { shot, record, warm }) {
   }
 
   await stage(shot);
+  frame(1 / 30); // request everything the first frame needs
+  await whenLoaded();
   for (let i = 0; i < warm; i++) frame(1 / 30, i > warm - 4);
   if (shot === 'table') ui.toggleTable(state, true, ctx);
   if (shot === 'slips') ui.toggleSlips(state, true);

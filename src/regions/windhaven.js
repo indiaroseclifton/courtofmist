@@ -2,7 +2,7 @@
 // Emerie's shop, a sheep pass to the east and the black peak of Ramiel to the north.
 import * as THREE from 'three';
 import { makeRegion, person, route, act, v3 } from './region.js';
-import { terrain, hills, forest, house, tent, torch, box, rand, collider } from '../world/kit.js';
+import { terrain, hills, forest, house, tent, torch, box, rand, collider, grassField } from '../world/kit.js';
 import { pbr, plain } from '../engine/assets.js';
 import { look } from '../game/cast.js';
 import { fbm } from '../world/textures.js';
@@ -36,6 +36,11 @@ export function windhaven(ctx) {
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vH;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvH = position.y;');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vH;').replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\nif (vH < 22.0) discard;');
   };
+
+  // steppe grass, bent by the wind that never stops
+  const sway = grassField(R.root, { ground, area: [-110, 110, -100, 120], count: 30000, seed: 52, color: 0xc8b890, height: 0.55,
+    avoid: (x, z) => Math.hypot(x, z) < 13 || ground(x, z) > 22 });
+  R.updaters.push((dt, t) => sway(t * 1.8));
 
   // the camp
   const r = rand(51);

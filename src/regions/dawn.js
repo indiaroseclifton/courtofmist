@@ -1,7 +1,7 @@
 // The Dawn Court's infirmary: rose-white arcades on a sea cliff, facing the sunrise.
 import * as THREE from 'three';
 import { makeRegion, person, route, act, v3 } from './region.js';
-import { box, column, arch, torch, waterPlane, rand, collider } from '../world/kit.js';
+import { box, column, arch, torch, waterPlane, rand, collider, grassField } from '../world/kit.js';
 import { pbr, plain } from '../engine/assets.js';
 import { look } from '../game/cast.js';
 import { fbm } from '../world/textures.js';
@@ -35,6 +35,10 @@ export function dawnInfirmary(ctx) {
   waterPlane(R.root, { size: 1200, y: 0, z: 400, sunDir, sunColor: 0xffc0a0, color: 0x1a3a50, distortion: 3.5 }).then((w) => {
     R.updaters.push((dt, t) => { w.material.uniforms.time.value = t * 0.4; });
   });
+
+  const sway = grassField(R.root, { ground: (x, z) => ground(x, z), area: [-80, 80, -120, 28], count: 18000, seed: 102, color: 0xe0d0b8,
+    avoid: (x, z) => Math.abs(x) < 26 && z > -36 && z < 14 });
+  R.updaters.push((dt, t) => sway(t));
 
   // the infirmary: arcaded wings around a courtyard open to the sea
   const rose = pbr('marble', { repeat: [2, 4], color: 0xf0d8d0 });

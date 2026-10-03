@@ -131,39 +131,104 @@ export function forest(parent, { kind = 'summer', count = 200, area = [-100, 100
   return mats.map((m) => new THREE.Vector3().setFromMatrixPosition(m));
 }
 
-/** Rose beds: leafy mounds studded with blooms. The Spring Court's are muddy at the hem. */
+/** Rose beds: bushes of leaf cards studded with petal-cup blooms. The Spring Court's are muddy at the hem. */
+let roseGeo = null;
+function roseGeometry() {
+  if (roseGeo) return roseGeo;
+  const r = rand(404);
+  const cards = [];
+  for (let i = 0; i < 22; i++) {
+    const q = new THREE.PlaneGeometry(0.55, 0.55);
+    const phi = r() * Math.PI * 2, th = Math.acos(r() * 0.9);
+    q.rotateY(r() * Math.PI).rotateX((r() - 0.5) * 0.9);
+    q.translate(Math.sin(th) * Math.cos(phi) * 0.38, 0.35 + Math.cos(th) * 0.32, Math.sin(th) * Math.sin(phi) * 0.38);
+    cards.push(q);
+  }
+  // a bloom: three rings of cupped petals around a tight bud
+  const petals = [];
+  for (let ring = 0; ring < 3; ring++) {
+    const n = 5 + ring;
+    for (let k = 0; k < n; k++) {
+      const pg = new THREE.SphereGeometry(0.045 - ring * 0.008, 6, 4, 0, Math.PI * 0.7, 0, Math.PI * 0.6);
+      pg.scale(1, 1.2, 0.5);
+      pg.rotateX(-0.5 + ring * 0.35).translate(0, 0.01 * ring, 0.028 - ring * 0.008).rotateY((k / n) * Math.PI * 2 + ring * 0.6);
+      petals.push(pg);
+    }
+  }
+  petals.push(new THREE.SphereGeometry(0.018, 8, 6).translate(0, 0.03, 0));
+  roseGeo = { bush: mergeGeometries(cards.map((g) => g.toNonIndexed())), bloom: mergeGeometries(petals.map((g) => g.toNonIndexed())) };
+  return roseGeo;
+}
+
 export function roses(parent, spots, { colors = [0x8a0f1e, 0xb02a3a, 0xd8a0a8], mud = true, seed = 5 } = {}) {
   const r = rand(seed);
-  const bush = new THREE.IcosahedronGeometry(0.6, 2);
-  const bp = bush.attributes.position;
-  for (let i = 0; i < bp.count; i++) {
-    const v = new THREE.Vector3().fromBufferAttribute(bp, i);
-    v.multiplyScalar(0.8 + vnoise(v.x * 3 + 9, v.z * 3 + 9, 64, 2) * 0.5); v.y *= 0.75;
-    bp.setXYZ(i, v.x, v.y, v.z);
-  }
-  bush.computeVertexNormals();
-  const leafMat = new THREE.MeshStandardMaterial({ map: leafTexture('spring'), color: 0x9ab08a, roughness: 0.8 });
+  const { bush, bloom } = roseGeometry();
+  const leafMat = new THREE.MeshStandardMaterial({ map: leafTexture('spring'), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.7, color: 0xb8c8a8 });
   const bushes = shadow(new THREE.InstancedMesh(bush, leafMat, spots.length));
-  const bloomGeo = new THREE.SphereGeometry(0.075, 8, 6);
+  bushes.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: leafMat.map, alphaTest: 0.45 });
   const blooms = [];
   spots.forEach((p, i) => {
-    const s = 0.8 + r() * 0.6;
-    bushes.setMatrixAt(i, new THREE.Matrix4().compose(new THREE.Vector3(p.x, p.y + 0.35 * s, p.z), new THREE.Quaternion(), new THREE.Vector3(s, s, s)));
-    for (let k = 0; k < 14; k++) {
+    const s = 0.9 + r() * 0.6;
+    bushes.setMatrixAt(i, new THREE.Matrix4().compose(new THREE.Vector3(p.x, p.y, p.z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), r() * 6.28), new THREE.Vector3(s, s, s)));
+    for (let k = 0; k < 11; k++) {
       const a = r() * 6.28, h = r();
-      blooms.push([new THREE.Vector3(p.x + Math.cos(a) * 0.5 * s * (1 - h * 0.4), p.y + 0.25 + h * 0.65 * s, p.z + Math.sin(a) * 0.5 * s * (1 - h * 0.4)), h]);
+      const rad = (0.3 + r() * 0.15) * s * Math.sqrt(1 - h * 0.6);
+      blooms.push([new THREE.Vector3(p.x + Math.cos(a) * rad, p.y + (0.3 + h * 0.45) * s, p.z + Math.sin(a) * rad), h, a]);
     }
   });
-  const bloomMat = new THREE.MeshPhysicalMaterial({ roughness: 0.55, sheen: 1, sheenColor: new THREE.Color(0xff8090), sheenRoughness: 0.4 });
-  const bm = shadow(new THREE.InstancedMesh(bloomGeo, bloomMat, blooms.length), true, false);
+  const bloomMat = new THREE.MeshPhysicalMaterial({ roughness: 0.5, sheen: 1, sheenColor: new THREE.Color(0xffb0b8), sheenRoughness: 0.35, side: THREE.DoubleSide });
+  const bm = shadow(new THREE.InstancedMesh(bloom, bloomMat, blooms.length), true, false);
   const c = new THREE.Color();
-  blooms.forEach(([p, h], i) => {
-    bm.setMatrixAt(i, new THREE.Matrix4().makeTranslation(p.x, p.y, p.z));
+  blooms.forEach(([p, h, a], i) => {
+    const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler((r() - 0.5) * 0.8, a, (r() - 0.5) * 0.8));
+    const sc = 0.9 + r() * 0.5;
+    bm.setMatrixAt(i, new THREE.Matrix4().compose(p, tilt, new THREE.Vector3(sc, sc, sc)));
     c.set(colors[(r() * colors.length) | 0]);
-    if (mud && h < 0.3) c.lerp(new THREE.Color(0x3a2a1a), 0.55); // mud splashed on the low blooms
+    if (mud && h < 0.3) c.lerp(new THREE.Color(0x3a2a1a), 0.5); // mud splashed on the low blooms
     bm.setColorAt(i, c);
   });
   parent.add(bushes, bm);
+}
+
+/** Grass tufts: crossed alpha cards that lean in the wind, scattered where the ground is lawn or steppe. */
+let tuftTex = null;
+export function grassField(parent, { ground, area, count = 20000, seed = 9, color = 0xffffff, avoid = () => false, height = 0.45 }) {
+  if (!tuftTex) {
+    const cv = document.createElement('canvas'); cv.width = 256; cv.height = 128;
+    const g = cv.getContext('2d');
+    for (let i = 0; i < 90; i++) {
+      const x = Math.random() * 256, h = 50 + Math.random() * 78, lean = (Math.random() - 0.5) * 30;
+      const shade = 60 + Math.random() * 70;
+      g.strokeStyle = `rgb(${shade * 0.55 | 0},${shade | 0},${shade * 0.35 | 0})`;
+      g.lineWidth = 1.5 + Math.random() * 2;
+      g.beginPath(); g.moveTo(x, 128); g.quadraticCurveTo(x + lean * 0.3, 128 - h * 0.6, x + lean, 128 - h); g.stroke();
+    }
+    tuftTex = new THREE.CanvasTexture(cv); tuftTex.colorSpace = THREE.SRGBColorSpace;
+  }
+  const quads = [0, 1, 2].map((k) => new THREE.PlaneGeometry(0.6, height).translate(0, height / 2, 0).rotateY((k / 3) * Math.PI));
+  const geo = mergeGeometries(quads.map((q) => q.toNonIndexed()));
+  const mat = new THREE.MeshStandardMaterial({ map: tuftTex, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 0.9, color });
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.time = { value: 0 };
+    mat.userData.shader = sh;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float time;').replace('#include <begin_vertex>',
+      '#include <begin_vertex>\nvec4 wp = instanceMatrix * vec4(position, 1.0);\nfloat sway = sin(time * 1.7 + wp.x * 0.35 + wp.z * 0.21) * 0.08 + sin(time * 3.1 + wp.x * 1.3) * 0.02;\ntransformed.x += sway * position.y / 0.45;');
+  };
+  const r = rand(seed);
+  const mats = [];
+  for (let i = 0; i < count * 2 && mats.length < count; i++) {
+    const x = area[0] + r() * (area[1] - area[0]), z = area[2] + r() * (area[3] - area[2]);
+    if (avoid(x, z)) continue;
+    const y = ground(x, z);
+    if (y === null || y === undefined) continue;
+    const s = 0.7 + r() * 0.7;
+    mats.push(new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), r() * 6.28), new THREE.Vector3(s, s * (0.7 + r() * 0.6), s)));
+  }
+  const im = new THREE.InstancedMesh(geo, mat, mats.length);
+  im.receiveShadow = true;
+  mats.forEach((m, i) => im.setMatrixAt(i, m));
+  parent.add(im);
+  return (t) => { if (mat.userData.shader) mat.userData.shader.uniforms.time.value = t; };
 }
 
 // ---------------------------------------------------------------- architecture

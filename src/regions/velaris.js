@@ -34,10 +34,12 @@ export function velaris(ctx) {
     quay: { pos: v3(-30, 0, 20), heading: Math.PI },
     house: { pos: v3(0, STAIR.top, STAIR.z1 - 8), heading: Math.PI },
     ring: { pos: v3(11, STAIR.top, STAIR.z1 - 9), heading: -Math.PI / 2 },
+    shot: { pos: v3(-14, 0, 17.6), heading: Math.PI / 2 + 0.15, yaw: -Math.PI / 2 - 0.35, pitch: 0.06 },
   };
 
   for (const p of buildCrowd(R.root, 30)) R.people.push(p);
-  const missions = setupMissions({ ...ctx, scene: R.root, world });
+  // a live view of the shared context (not a copy), with this region's root and world
+  const missions = setupMissions(Object.create(ctx, { scene: { value: R.root }, world: { value: world } }));
   R.missions = missions;
   R.people.push(...missions.named);
   R.interactables.push(...missions.interactables);

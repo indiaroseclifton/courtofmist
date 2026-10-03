@@ -113,15 +113,27 @@ None of these are battles. Completing one opens a shop, a camp or a sibling ques
 - **The painted map (M):** a watercolor of Prythian on a wooden table. Carved counters show trust, and a red banner appears only when a court marches. A Velaris inset carries wax pins at the winnow marks you have learned. A paper ledger next to it holds armies, Keir's attention and the market's opinion of you.
 - **No minimap, no compass bar, no quest arrows.** People tell you where things are.
 
-## 8. What the slice in this repository covers
+## 8. What is built in this repository
 
-Playable now, in a browser:
+Playable in a browser (three.js), all twelve places on one island, travelled between by road or winnowed to from the painted map:
 
-- Velaris at night: the Sidra with planar reflections, three bridges, quays, the Rainbow's painted terraces, the Palace of Thread and Jewels, a market of nine stalls with silk awnings and candles, the north-bank cliff, the stair and the House of Wind.
-- Feyre: procedural rig, weighted gait, simulated hair, bow and quiver, Illyrian boots, wings that unfold when you fly.
-- A lived-in crowd of about 40 people strolling, crossing bridges and talking at stalls.
-- Side jobs: **Pigment in the Sidra** (a skiff on the river), **A cousin at the Palace** (no-fight resolution, three outcomes), **Ten thousand steps** (walk-and-talk at her pace on the stair).
-- **The summons you can refuse.** After your first job a masked messenger brings Keir's summons. Refusing raises heat. Accepting writes you a debt slip. The throne room itself isn't built yet.
-- Systems: bargain slips, heat and social tracks, war-table trust, winnow marks, wing stamina, saving to the browser.
+| Region | What is there | Story beats | Open-world work |
+|---|---|---|---|
+| Mortal village (winter) | thatched cottages, the well, the family cottage, the estate on the sea road, snow-pine forest, the Wall shimmering to the north | the wolf in the snow, the beast at the door, the mortal queens | the cottage roof |
+| Spring manor (overcast) | pale manor and portico, muddy gravel walks, rose beds, fountain, stables, Calanmai glade, the woods | the manor, naga in the woods, fire night, the bargain comes due, spy in Spring | a favor for Alis |
+| Under the Mountain | cells, Amarantha's hall, the mud labyrinth, the spiked-ceiling riddle chamber | the three trials, the bargain in the dark, being Made | (none, by design) |
+| Velaris + House of Wind | the Sidra, quays with CC0 street lanterns, bridges, the Rainbow, the Palace, the stair, the House and its training ring, the townhouse war table | the city of starlight, the war table, Nesta's first two beats | pigment, the cousin, the priestess, copy a ward, the singer, Solstice gifts |
+| Hewn City | basalt cavern, carved facades, masked crowd, Keir's throne room, the singer's stage, the cells | Keir's throne room (refusable) | confession hour, the singer's set |
+| The Middle | old dark wood, the Weaver's cottage, the Suriel's stone circle | the Weaver (stealth), the Suriel | — |
+| Windhaven | steppe grass, hide tents, cook fires, the ring, Emerie's shop, the sheep pass and pen, Ramiel | Emerie's shop, the Blood Rite | count the clipped wings, sheep out of the pass |
+| Adriata (golden hour) | sea, white town, piers and boats, the island palace, net frames | audience with Tarquin | nets after the storm, a favor |
+| Forest Court (autumn) | copper forest, Beron's keep and towers | audience with Beron | two favors |
+| Winter glasshouse | glass nave and dome on a snowfield, winter roses inside | audience with Kallias | two favors |
+| Dawn infirmary (sunrise) | arcaded clifftop infirmary over the sea, fever beds | audience with Thesan | a favor |
+| Day library (noon) | marble hall of stacks under skylights and sunbeams | audience with Helion | reshelve the east wing, a favor |
 
-Not built: every other region, combat, Hewn City, the Nesta campaign, Solstice, voice, and authored character art.
+Systems: bargains as slips, Hewn City heat and Velaris social standing, war-table trust that only moves for work on a court's own land (3 marks to march), winnowing to visited marks, wings unlocked by story, combat (dagger, bow with draw, the earned light burst), a journal in her hand (J), Solstice as a recurring city event, and a second campaign as Nesta.
+
+Graphics: 2048² tileable PBR texture sets (`tools/gen_textures.py`), CC0 Poly Haven HDR image-based lighting per region, a parametric sky (night, overcast, snow day, afternoon, golden hour, sunrise, noon), instanced forests, rose beds and wind-blown grass, reflective water, volumetric-looking mist and sunbeams, 4K shadow maps on high quality.
+
+Not built: authored character art (drop a rigged GLB at `public/models/feyre.glb` to replace the procedural Feyre), voice, the war itself, Hybern (never playable).

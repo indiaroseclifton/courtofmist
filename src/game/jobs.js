@@ -250,6 +250,8 @@ export function setupJobs(ctx) {
 
   // ------------------------------------------------------------------ the Weaver
   function weaverStealth(R, cb) {
+    if (R._stealth) { R._stealth.cb = cb; return; } // re-entering the wood resumes the same attempt
+    R._stealth = { cb };
     const w = R.named.weaver;
     const home = R.weaverDoor.clone();
     let noise = 0, has = false, hunting = false, over = false;
@@ -276,7 +278,7 @@ export function setupJobs(ctx) {
       if (has && p.pos.distanceTo(home) > 30) {
         over = true; ctx.combat.clear('weaver'); R.weaverSpinning = true;
         w.pos.set(home.x + 1.6, w.pos.y, home.z + 0.6);
-        cb(true);
+        R._stealth.cb(true);
       }
     });
   }

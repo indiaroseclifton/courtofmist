@@ -93,22 +93,33 @@ export class UI {
 
   // A single spoken line. Resolves after a reading-speed delay.
   say(who, text, ms) {
-    clearTimeout(this.lineTimer);
+    this.releaseLine();
     this.sub.innerHTML = `${who ? `<span class="who">${who}</span>` : ''}${text}`;
     this.sub.classList.add('on');
-    const dur = ms ?? Math.max(2200, text.length * 55);
-    return new Promise((res) => { this.lineTimer = setTimeout(() => { res(); }, dur); });
+    const dur = this.fast ? 1 : ms ?? Math.max(2200, text.length * 55);
+    return new Promise((res) => {
+      this.lineResolve = res;
+      this.lineTimer = setTimeout(() => { this.lineResolve = null; res(); }, dur);
+    });
+  }
+
+  // A line that is replaced still finishes: whoever was waiting on it moves on.
+  releaseLine() {
+    clearTimeout(this.lineTimer);
+    const r = this.lineResolve; this.lineResolve = null;
+    if (r) r();
   }
 
   clearSay() { this.sub.classList.remove('on'); }
 
   // A line followed by numbered replies. Resolves with the chosen index.
   ask(who, text, options) {
-    clearTimeout(this.lineTimer);
+    this.releaseLine();
     this.choiceCount = options.length;
     this.sub.innerHTML = `${who ? `<span class="who">${who}</span>` : ''}${text}<ol>${options
       .map((o, i) => `<li><span class="n">${i + 1}</span>${o}</li>`).join('')}</ol>`;
     this.sub.classList.add('on');
+    if (this.fast) { this.choiceResolve = null; return new Promise((res) => setTimeout(() => res(this.autoChoice ?? 0), 1)); }
     return new Promise((res) => { this.choiceResolve = (i) => { this.clearSay(); res(i); }; });
   }
 
@@ -117,7 +128,7 @@ export class UI {
     else this.promptEl.classList.remove('on');
   }
 
-  fade(on) { this.fadeEl.classList.toggle('on', on); return new Promise((r) => setTimeout(r, 520)); }
+  fade(on) { this.fadeEl.classList.toggle('on', on); return new Promise((r) => setTimeout(r, this.fast ? 1 : 520)); }
 
   // ---------------- bargain slips ----------------
   toggleSlips(state, force) {

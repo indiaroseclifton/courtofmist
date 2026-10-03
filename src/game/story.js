@@ -6,6 +6,7 @@ import { COURT_NAMES } from '../core/content.js';
 import { ARMY_TRUST } from '../core/state.js';
 
 const v3 = (x, y, z) => new THREE.Vector3(x, y, z);
+const params0 = () => new URLSearchParams(location.search);
 
 const JOURNEYS = {
   mortal_village: 'South, past the Wall, to where the snow lies on the poor.',
@@ -41,7 +42,7 @@ export class Story {
   save() { return { campaign: this.campaign, i: this.i, flags: [...this.flags], audiences: [...this.audiences], favors: this.favors }; }
   async load(state) {
     let d = null;
-    try { d = JSON.parse(localStorage.getItem('court-of-mist-save') ?? 'null')?.story; } catch { /* fresh */ }
+    if (params0().has('test')) d = null; else try { d = JSON.parse(localStorage.getItem('court-of-mist-save') ?? 'null')?.story; } catch { /* fresh */ }
     const params = new URLSearchParams(location.search);
     if (params.has('act')) d = { campaign: 'feyre', i: this.indexOf(['hunt', 'the_bargain', 'spy'][+params.get('act') - 1] ?? 'hunt'), flags: { 1: [], 2: ['made', 'act2', 'winnow'], 3: ['made', 'act2', 'winnow', 'wings', 'act3', 'solstice'] }[params.get('act')] ?? [] };
     if (d) { this.campaign = d.campaign; this.i = d.i; this.flags = new Set(d.flags); this.audiences = new Set(d.audiences ?? []); this.favors = d.favors ?? {}; }
@@ -66,9 +67,8 @@ export class Story {
   async begin(startRegion) {
     const b = this.beat;
     const where = b?.region ?? (this.flag('done') ? 'velaris' : startRegion ?? 'mortal_village');
-    await this.ctx.travel(where, b?.place, { instant: true });
+    await this.ctx.travel(where, b?.place, { instant: true }); // onEnter starts and announces the beat
     this.ctx.regions.velaris?.setSolstice?.(this.flag('solstice'));
-    await this.startBeat();
   }
 
   async startBeat() {
@@ -82,7 +82,7 @@ export class Story {
 
   announce() {
     const b = this.beat;
-    if (!b) return;
+    if (!b || this.ctx.busy) return;
     this.ctx.ui.say('', `<i>${b.objective}</i>`, 3800).then(() => { if (!this.ctx.busy) this.ctx.ui.clearSay(); });
   }
 
@@ -232,10 +232,11 @@ function feyreBeats(S) {
       id: 'hunt', act: 1, title: 'The wolf in the snow', region: 'mortal_village', place: 'cottage',
       objective: 'Three days without meat. Take the bow into the forest north of the cottage and hunt.',
       start(R) {
-        if (S._huntSpawned) return;
-        S._huntSpawned = true;
-        ctx.combat.spawn(R, 'deer', v3(-30, 0, -120), { tag: 'deer', passive: true });
-        ctx.combat.spawn(R, 'wolf', v3(-10, 0, -130), { tag: 'wolf', hp: 3 });
+        if (!S._huntSpawned) {
+          S._huntSpawned = true;
+          ctx.combat.spawn(R, 'deer', v3(-30, 0, -120), { tag: 'deer', passive: true });
+          ctx.combat.spawn(R, 'wolf', v3(-10, 0, -130), { tag: 'wolf', hp: 3 });
+        }
         S.when(() => ctx.combat.dead('wolf'), async () => {
           await S.talk(null, async () => {
             await say('', '<i>The wolf is too large, and too quiet, and its eyes were too clever. You do not let yourself think about that.</i>', 4000);
@@ -281,8 +282,7 @@ function feyreBeats(S) {
       id: 'naga', act: 1, title: 'Something in the woods', region: 'spring_manor', place: 'woods',
       objective: 'You went past the garden wall. Something is following you through the trees.',
       start(R) {
-        if (S._naga) return; S._naga = true;
-        for (const [x, z] of [[110, 30], [118, 48], [104, 56]]) ctx.combat.spawn(R, 'naga', v3(x, 0, z), { tag: 'naga', hp: 3 });
+        if (!S._naga) { S._naga = true; for (const [x, z] of [[110, 30], [118, 48], [104, 56]]) ctx.combat.spawn(R, 'naga', v3(x, 0, z), { tag: 'naga', hp: 3 }); }
         S.when(() => ctx.combat.dead('naga'), async () => {
           await S.talk(R.named.tamlin, async () => {
             await say('', '<i>He finds you with your back against a tree, three dead things at your feet and your last arrow nocked.</i>', 3600);
@@ -562,7 +562,7 @@ function nestaBeats(S) {
       id: 'ring', act: 'N', title: 'The training ring', region: 'velaris', place: 'ring', travel: 'Back up. Cassian is waiting at the ring, insufferably cheerful.',
       objective: 'Spar with Cassian in the ring. Land five clean blows.',
       start(R) {
-        ctx.combat.spawn(R, 'spar', R.named.cassian.pos.clone(), { tag: 'spar', hp: 5, body: R.named.cassian });
+        if (!S._spar) { S._spar = true; ctx.combat.spawn(R, 'spar', R.named.cassian.pos.clone(), { tag: 'spar', hp: 5, body: R.named.cassian }); }
         S.when(() => ctx.combat.dead('spar'), async () => {
           await S.talk(R.named.cassian, async () => { await say('Cassian', 'Five. Don\'t smile, you\'ll crack something. Again tomorrow.'); });
           S.complete('ring');
@@ -589,8 +589,7 @@ function nestaBeats(S) {
       id: 'blood_rite', act: 'N', title: 'The Blood Rite', region: 'windhaven', place: 'ramiel', travel: 'The Blood Rite. Seven days, one mountain, and every male who wants to prove something.',
       objective: 'Reach the cairn on Ramiel\'s summit. Keep Emerie and Gwyn alive. Fight only when they make you.',
       start(R) {
-        if (S._rite) return; S._rite = true;
-        for (const [dx, dz] of [[-12, -30], [14, -50], [-6, -75], [10, -95]]) ctx.combat.spawn(R, 'illyrian', R.ramiel.foot.clone().add(v3(dx, 0, dz)), { tag: 'rite', hp: 4 });
+        if (!S._rite) { S._rite = true; for (const [dx, dz] of [[-12, -30], [14, -50], [-6, -75], [10, -95]]) ctx.combat.spawn(R, 'illyrian', R.ramiel.foot.clone().add(v3(dx, 0, dz)), { tag: 'rite', hp: 4 }); }
         S.when(() => ctx.player.pos.distanceTo(R.ramiel.summit) < 6, async () => {
           await S.talk(R.named.emerie, async () => {
             await say('', '<i>The cairn. The wind up here sounds like a crowd cheering for somebody else. You let it.</i>', 3600);

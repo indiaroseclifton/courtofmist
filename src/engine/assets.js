@@ -9,12 +9,19 @@ const BASE = import.meta.env.BASE_URL;
 const texLoader = new THREE.TextureLoader();
 const images = new Map(); // url -> Texture (source of truth, shared images)
 let maxAniso = 8;
+let pending = 0;
+const track = () => { pending++; let done = false; return () => { if (!done) { done = true; pending--; } }; };
+/** Resolves once every texture, environment and model requested so far has arrived (or failed). */
+export function whenLoaded() {
+  return new Promise((res) => { const tick = () => (pending <= 0 ? res() : setTimeout(tick, 100)); tick(); });
+}
 
 export function setAnisotropy(renderer) { maxAniso = renderer.capabilities.getMaxAnisotropy(); }
 
 function baseTexture(url, srgb) {
   if (!images.has(url)) {
-    const t = texLoader.load(url, undefined, undefined, () => { /* missing map: material stays flat */ });
+    const fin = track();
+    const t = texLoader.load(url, fin, undefined, fin); // a missing map leaves the material flat
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
     t.anisotropy = maxAniso;
@@ -72,12 +79,14 @@ export function loadEnv(renderer, name) {
   if (!pmrem) pmrem = new THREE.PMREMGenerator(renderer);
   if (!envs.has(name)) {
     envs.set(name, new Promise((resolve) => {
+      const fin = track();
       new HDRLoader().load(`${BASE}hdr/${name}.hdr`, (tex) => {
+        fin();
         tex.mapping = THREE.EquirectangularReflectionMapping;
         const rt = pmrem.fromEquirectangular(tex);
         tex.dispose();
         resolve(rt.texture);
-      }, undefined, () => resolve(null));
+      }, undefined, () => { fin(); resolve(null); });
     }));
   }
   return envs.get(name);
@@ -89,7 +98,8 @@ const models = new Map();
 export function loadModel(name) {
   if (!models.has(name)) {
     models.set(name, new Promise((resolve) => {
-      gltfLoader.load(`${BASE}models/${name}.glb`, (g) => resolve(g), undefined, () => resolve(null));
+      const fin = track();
+      gltfLoader.load(`${BASE}models/${name}.glb`, (g) => { fin(); resolve(g); }, undefined, () => { fin(); resolve(null); });
     }));
   }
   return models.get(name);

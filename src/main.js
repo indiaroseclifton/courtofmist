@@ -80,7 +80,7 @@ for (let i = 0; i < SMOKE; i++) smokeLife[i] = Math.random();
 // ---------------- state, player, UI ----------------
 const state = new GameState();
 try {
-  const saved = !(SHOT || RECORD) && localStorage.getItem('court-of-mist-save');
+  const saved = !(SHOT || RECORD || params.has('test')) && localStorage.getItem('court-of-mist-save');
   if (saved) state.load(JSON.parse(saved));
 } catch { /* a private window: start fresh */ }
 
@@ -312,7 +312,7 @@ function frame(dt, draw = true) {
 
   // winnow marks are learned by standing on them
   for (const [id, p] of Object.entries(region.marks)) {
-    if (WINNOW_MARKS[id] && !state.canWinnow(id) && player.pos.distanceTo(p) < 5) {
+    if (WINNOW_MARKS[id] && !state.canWinnow(id) && player.pos.distanceTo(p) < 5 && !ctx.busy) {
       state.visitMark(id);
       ctx.save();
       ui.say('', `<i>You'll remember this place: ${WINNOW_MARKS[id].name}.</i>`, 2400).then(() => { if (!ctx.busy) ui.clearSay(); });
@@ -399,11 +399,17 @@ function frame(dt, draw = true) {
 const startRegion = REGION_FACTORIES[state.region] && state.region !== 'velaris' ? state.region : null;
 await ctx.story.load(state);
 const api = { ctx, frame, input, cam, player, state, ui, get region() { return region; }, setConvo: (n) => { convoNpc = n; } };
-if (SHOT || RECORD) {
-  await runCapture(api, { shot: SHOT, record: RECORD, warm: parseInt(params.get('warm') ?? '90', 10) });
+if (params.has('test')) {
+  // logic-only mode for tools/playtest.mjs: instant dialogue, no render loop
+  ui.fast = true;
+  document.getElementById('title')?.remove();
+  await ctx.story.begin(startRegion);
+  window.__ready = true;
+} else if (SHOT || RECORD) {
+  try { await runCapture(api, { shot: SHOT, record: RECORD, warm: parseInt(params.get('warm') ?? '90', 10) }); } catch (e) { window.__failed = String(e); throw e; }
 } else {
   await ctx.story.begin(startRegion);
   cam.snap = true;
   renderer.setAnimationLoop(() => frame(Math.min(clock.getDelta(), 1 / 20)));
 }
-window.__game = { state, player, cam, ctx, regions };
+window.__game = { state, player, cam, ctx, regions, frame };
