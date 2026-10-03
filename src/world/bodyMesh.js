@@ -360,7 +360,7 @@ export function hairCards(color, len, seed = 1) {
       dir.y -= front && k < 3 ? 0.04 : len < 0.12 ? 0.12 : 0.22; dir.normalize();
       const q = pts[pts.length - 1].clone().addScaledVector(dir, seg);
       const ih = inHead(q);
-      if (ih < 1.06 || (q.y > C.y - 0.06 && ih < 1.14)) { const out = q.clone().sub(C); out.set(out.x / R.x, out.y / R.y, out.z / R.z).normalize(); const k2 = q.y > C.y - 0.06 ? 1.025 + k * 0.004 : 1.06; q.set(C.x + out.x * R.x * k2, C.y + out.y * R.y * k2, C.z + out.z * R.z * k2); }
+      if (ih < 1.06 || q.y > C.y - 0.06) { const out = q.clone().sub(C); out.set(out.x / R.x, out.y / R.y, out.z / R.z).normalize(); const k2 = q.y > C.y - 0.06 ? 1.025 + k * 0.004 : 1.06; q.set(C.x + out.x * R.x * k2, C.y + out.y * R.y * k2, C.z + out.z * R.z * k2); }
       // neck and shoulders, head-space (shoulder line is ~0.17 below the head origin)
       if (q.y < -0.02) {
         const rx = q.y < -0.13 ? 0.19 : 0.075, rz = q.y < -0.13 ? 0.13 : 0.075;
