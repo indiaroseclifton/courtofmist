@@ -20,7 +20,9 @@ const byName = new Map(root.listNodes().map((n) => [n.getName(), n]));
 const hips = (d) => d.getRoot().listNodes().find((n) => n.getName() === 'Hips');
 const hipY = (d) => { const h = hips(d); const m = h.getWorldMatrix(); return m[13]; };
 const myHip = hipY(doc);
-for (const a of root.listAnimations()) a.setName('walk');
+// the model's own clip is its walk, unless a walk is supplied (image-to-3D rigs carry a placeholder)
+const suppliesWalk = clips.some((c) => c.startsWith('walk='));
+for (const a of root.listAnimations()) { if (suppliesWalk) a.dispose(); else a.setName('walk'); }
 
 for (const spec of clips) {
   const [name, path] = spec.split('=');
