@@ -92,6 +92,16 @@ A desktop GPU is recommended. Each frame draws the scene twice, once for the riv
   - Court trust that only moves for work done on that court's land.
   - Combat: melee, a bow with arrow drop, and one earned power.
 
+## Higgsfield assets
+
+The game streams assets generated with Higgsfield from its CDN (`src/content/hf_assets.js`), and falls back to its own files when the CDN can't be reached:
+
+- **Characters.** Feyre (from the turnaround in `docs/reference/`), Rhysand and Nesta are rigged, PBR-textured Meshy models. Each carries five clips (idle, walk, run, a bow shot and a blade slash). The bow is held at full draw while you aim and released on the shot. Slashes and the power play on the upper body over the legs.
+- **Surfaces.** 14 photographic materials (setts, ashlar, plaster, basalt, marble, timber, slate, thatch, grass, mud, snow, sand, bark, granite) were generated and made tileable, each with a derived normal map.
+- **Voices.** All 65 character lines are voiced, including the High Lords' audiences, the favours and the Suriel. Each subtitle stays up until its line has been spoken.
+
+`tools/hf/` holds the pipeline: `textures.py` (tileable PBR), `models.mjs` (WebP textures, meshopt, clip merging and retargeting), `verify.mjs` (renders shots where the CDN is reachable) and `voice_lines.mjs`.
+
 ## Feyre's model
 
 `docs/reference/` holds the character turnaround Feyre is built from. From those four views, Higgsfield (Meshy multi-image-to-3D) produces a textured, PBR, rigged GLB with a walk cycle. Save it as `public/models/feyre.glb`. The game then uses it in place of the procedural figure, plays the walk cycle at a speed matched to her movement, and attaches her wings to its shoulders. The Blender scene takes the same file with `--feyre public/models/feyre.glb`. Without the file, both fall back to the procedural figure.
