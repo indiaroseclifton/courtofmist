@@ -8,14 +8,14 @@ import { look } from '../game/cast.js';
 export function dayLibrary(ctx) {
   const sunDir = new THREE.Vector3(0.25, 0.92, 0.2).normalize();
   const R = makeRegion('day_library', "The Day Court's library", {
-    sky: 'noon', sunDir, sunColor: 0xfff0d0, sunIntensity: 3.2, hemi: [0xf0e0c0, 0x5a4a30, 0.55],
-    fog: [0x6a5a40, 0.006], hdr: 'quarry_01_1k', envIntensity: 0.6, exposure: 0.85,
+    sky: 'noon', sunDir, sunColor: 0xfff0d0, sunIntensity: 2.4, hemi: [0xc0a880, 0x3a2a18, 0.35],
+    fog: [0x3a3020, 0.008], hdr: 'quarry_01_1k', envIntensity: 0.35, exposure: 0.6,
     lightColor: 0xffd090, lightIntensity: 6, weather: 'dust', weatherCount: 1400,
   });
   const X0 = -40, X1 = 40, Z0 = -90, Z1 = 20, HH = 26;
   R.ground = (x, z) => (x > X0 && x < X1 && z > Z0 && z < Z1 ? 0 : null);
   R.ceiling = () => HH - 0.5;
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(X1 - X0, Z1 - Z0).rotateX(-Math.PI / 2), pbr('marble', { repeat: [16, 22], color: 0xe8dcc0 }));
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(X1 - X0, Z1 - Z0).rotateX(-Math.PI / 2), pbr('marble', { repeat: [16, 22], color: 0xa89878 }));
   floor.position.set(0, 0, (Z0 + Z1) / 2); floor.receiveShadow = true; R.root.add(floor);
   const stone = pbr('ashlar', { repeat: [20, 8], color: 0xe0d0b0 });
   for (const [x, z, w, d] of [[X0, (Z0 + Z1) / 2, 1, Z1 - Z0], [X1, (Z0 + Z1) / 2, 1, Z1 - Z0], [0, Z0, X1 - X0, 1], [0, Z1, X1 - X0, 1]]) box(R.root, [w, HH, d], [x, HH / 2, z], stone, R.colliders);
@@ -55,7 +55,7 @@ export function dayLibrary(ctx) {
   R.places = {
     door: { pos: v3(0, 0, Z1 - 4), heading: Math.PI },
     stacks: { pos: v3(16, 0, -26), heading: Math.PI },
-    shot: { pos: v3(-4, 0, -10), heading: Math.PI, yaw: -0.15, pitch: 0.2 },
+    shot: { pos: v3(15, 0, -20), heading: Math.PI, yaw: 0.1, pitch: 0.15 },
   };
   return R;
 }

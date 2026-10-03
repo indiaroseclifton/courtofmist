@@ -7,8 +7,8 @@ import { look } from '../game/cast.js';
 
 export function hewnCity(ctx) {
   const R = makeRegion('hewn_city', 'The Hewn City', {
-    sky: 'none', sunDir: new THREE.Vector3(0, 1, 0), sunColor: 0x000000, sunIntensity: 0, hemi: [0x2a1a12, 0x050404, 0.22],
-    fog: [0x080605, 0.018], hdr: 'moonless_golf_1k', envIntensity: 0.12, exposure: 1.35,
+    sky: 'none', sunDir: new THREE.Vector3(0, 1, 0), sunColor: 0x000000, sunIntensity: 0, hemi: [0x4a3020, 0x0a0806, 0.45],
+    fog: [0x120c08, 0.012], hdr: 'moonless_golf_1k', envIntensity: 0.2, exposure: 1.6,
     lightColor: 0xff8a3a, lightIntensity: 16, lightDistance: 20, weather: 'embers', weatherCount: 400,
   });
   // the cavern floor slopes down from the gate (z = 70) to the throne room (z = -70)
@@ -29,8 +29,8 @@ export function hewnCity(ctx) {
   R.root.add(dome);
 
   // carved facades along both cavern walls: doors and windows lit from inside
-  const carve = pbr('basalt', { repeat: [3, 4], color: 0x8a8a90 });
-  const lit = emissive(0xff8a3a, 2.2);
+  const carve = pbr('granite', { repeat: [3, 4], color: 0x6a5850 }); // carved faces are lighter than the raw rock
+  const lit = emissive(0xff8a3a, 5);
   const r = rand(41);
   for (const side of [-1, 1]) {
     for (let z = -80; z < 70; z += 9 + r() * 4) {
@@ -38,7 +38,7 @@ export function hewnCity(ctx) {
       const x = side * (58 + r() * 4);
       box(R.root, [6, h, w], [x, floorY(z) + h / 2, z], carve, R.colliders);
       for (let f = 0; f < Math.floor(h / 4); f++) {
-        if (r() < 0.55) {
+        if (r() < 0.7) {
           const win = new THREE.Mesh(new THREE.PlaneGeometry(1, 1.8), lit);
           win.position.set(x - side * 3.01, floorY(z) + 2 + f * 4, z + (r() - 0.5) * (w - 2));
           win.rotation.y = side > 0 ? -Math.PI / 2 : Math.PI / 2;
@@ -47,6 +47,7 @@ export function hewnCity(ctx) {
       }
     }
   }
+  for (const side of [-1, 1]) for (let z = -70; z < 70; z += 16) torch(R.root, R.lanternSpots, { x: side * 53, z, y: floorY(z), h: 3.2, smoke: R.smokeSpots });
   // the avenue: braziers down both sides, the masked crowd walking it
   for (let z = -60; z < 70; z += 14) for (const x of [-12, 12]) torch(R.root, R.lanternSpots, { x, z, y: floorY(z), h: 2.4, brazier: true, smoke: R.smokeSpots });
   const masks = [0xc0c4cc, 0x9a7a40, 0x2a2a2e, 0x6a1a1a, 0xe0d8c0];
@@ -96,7 +97,7 @@ export function hewnCity(ctx) {
     throne: { pos: v3(0, 0, TZ + 8), heading: Math.PI },
     stage: { pos: v3(SX - 6, 0, SZ), heading: Math.PI / 2 },
     cells: { pos: v3(CX + 4, 0, CZ), heading: -Math.PI / 2 },
-    shot: { pos: v3(4, 0, 30), heading: Math.PI, yaw: 0.2, pitch: 0.12 },
+    shot: { pos: v3(44, 0, 34), heading: Math.PI - 0.25, yaw: -0.35, pitch: 0.14 },
   };
   for (const m of Object.values(R.marks)) m.y = floorY(m.z);
   return R;

@@ -10,17 +10,17 @@ export function winterGlasshouse(ctx) {
   const sunDir = new THREE.Vector3(-0.4, 0.45, 0.6).normalize();
   const R = makeRegion('winter_glasshouse', 'The Winter Court', {
     sky: 'snowday', sunDir, sunColor: 0xe8f0ff, sunIntensity: 1.6, hemi: [0xc8d8e8, 0x8090a0, 1.0],
-    fog: [0xc8d2dc, 0.006], hdr: 'san_giuseppe_bridge_2k', envIntensity: 1.1, exposure: 0.8,
-    lightColor: 0xd8e8ff, lightIntensity: 5, weather: 'snow', weatherCount: 2400,
+    fog: [0xb8c4d0, 0.0022], hdr: 'san_giuseppe_bridge_2k', envIntensity: 0.7, exposure: 0.62,
+    lightColor: 0xffc890, lightIntensity: 3, weather: 'snow', weatherCount: 2400,
   });
   const base = hills(4, 1 / 220, 91);
   const ground = (x, z) => base(x, z) * Math.min(1, Math.hypot(x, z) / 70);
   R.ground = (x, z) => (Math.abs(x) > 240 || Math.abs(z) > 240 ? null : ground(x, z));
-  terrain(R.root, { size: 500, seg: 160, height: ground, material: pbr('snow', { repeat: [110, 110] }) });
+  terrain(R.root, { size: 500, seg: 160, height: ground, material: pbr('snow', { repeat: [110, 110], color: 0xb8c0cc }) });
 
   // the glasshouse: iron-and-ice ribs, glass panes, a long nave and a domed crossing
-  const glass = new THREE.MeshPhysicalMaterial({ color: 0xdfeef8, roughness: 0.06, transmission: 0.92, thickness: 0.05, ior: 1.5, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false });
-  const frost = plain(0xb8c8d8, 0.3, { metalness: 0.6 });
+  const glass = new THREE.MeshPhysicalMaterial({ color: 0xd0e4f0, roughness: 0.04, metalness: 0, transmission: 1, thickness: 0.08, ior: 1.5, side: THREE.DoubleSide, envMapIntensity: 1.6 });
+  const frost = plain(0x2a3440, 0.35, { metalness: 0.8 });
   const L = 60, W = 22, H = 14;
   const nave = new THREE.Mesh(new THREE.CylinderGeometry(W / 2, W / 2, L, 32, 1, true, 0, Math.PI).rotateZ(Math.PI / 2).rotateY(Math.PI / 2), glass);
   nave.position.set(0, H - W / 2, 0); R.root.add(nave);
@@ -55,7 +55,7 @@ export function winterGlasshouse(ctx) {
   R.places = {
     door: { pos: v3(0, 0, L / 2 + 6), heading: Math.PI },
     crossing: { pos: v3(0, 0, -L / 2), heading: Math.PI },
-    shot: { pos: v3(3, 0, L / 2 - 4), heading: Math.PI, yaw: 0.1, pitch: 0.05 },
+    shot: { pos: v3(26, 0, L / 2 + 26), heading: Math.PI + 0.6, yaw: 0.75, pitch: 0.12 },
   };
   for (const m of Object.values(R.marks)) m.y = ground(m.x, m.z);
   return R;

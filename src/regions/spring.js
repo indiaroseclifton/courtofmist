@@ -54,7 +54,7 @@ export function springManor(ctx) {
   roses(R.root, spots, { colors: [0x8a0f1e, 0xb02a3a, 0xd8a0a8, 0xe8d0c0], mud: true });
 
   // lawn: tufts around the gardens, thinning where feet have worn the walks
-  const sway = grassField(R.root, { ground, area: [-90, 90, -10, 90], count: 26000, seed: 22, color: 0xd8e0c0,
+  const sway = grassField(R.root, { ground, area: [-90, 90, -10, 90], count: 30000, seed: 22, color: 0xa8b890,
     avoid: (x, z) => (Math.abs(x) < 4 && z < 62) || (Math.abs(z - 30) < 3.5 && Math.abs(x) < 36) || Math.hypot(x, z - 30) < 5 || (Math.abs(Math.abs(x) - 25) < 3 && Math.abs(z - 30) < 16) });
   R.updaters.push((dt, t) => sway(t));
 

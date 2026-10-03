@@ -10,7 +10,7 @@ export function mortalVillage(ctx) {
   const sunDir = new THREE.Vector3(0.3, 0.35, -0.6).normalize();
   const R = makeRegion('mortal_village', 'The mortal village', {
     sky: 'snowday', sunDir, sunColor: 0xd8dce8, sunIntensity: 1.1, hemi: [0xb8c4d4, 0x4a4a50, 0.9],
-    fog: [0xa8b0bc, 0.008], hdr: 'pedestrian_overpass_1k', envIntensity: 0.9, exposure: 0.95,
+    fog: [0x9aa2ae, 0.006], hdr: 'pedestrian_overpass_1k', envIntensity: 0.8, exposure: 0.78,
     lightColor: 0xffa860, lightIntensity: 6, weather: 'snow', weatherCount: 2200,
   });
   const base = hills(5, 1 / 180, 11);

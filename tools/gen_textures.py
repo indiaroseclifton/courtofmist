@@ -178,7 +178,7 @@ def plaster():
     """White lime plaster, tinted per building in the game; flakes reveal stone."""
     u, v = grid()
     n = fbm(u, v, 6, 7, 21)
-    flake = smooth(0.66, 0.68, fbm(u, v, 12, 5, 22))
+    flake = smooth(0.74, 0.76, fbm(u, v, 24, 5, 22))
     trowel = fbm(u * 1.0, v, 3, 4, 23)
     alb = col((0.82, 0.8, 0.76), u.shape) * (0.88 + n * 0.2)[..., None] * (0.95 + trowel * 0.1)[..., None]
     alb = mix(alb, col((0.32, 0.29, 0.26), u.shape), flake)

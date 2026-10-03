@@ -11,19 +11,22 @@ export function windhaven(ctx) {
   const sunDir = new THREE.Vector3(0.7, 0.32, 0.35).normalize();
   const R = makeRegion('windhaven', 'Windhaven', {
     sky: 'afternoon', sunDir, sunColor: 0xffe2b8, sunIntensity: 2.4, hemi: [0x9ab0c8, 0x4a3e30, 0.7],
-    fog: [0xa8b4c0, 0.0028], hdr: 'quarry_01_1k', envIntensity: 0.8, exposure: 0.85,
+    fog: [0x9aa8b8, 0.0032], hdr: 'quarry_01_1k', envIntensity: 0.8, exposure: 0.78,
     lightColor: 0xffa050, lightIntensity: 5, weather: 'spray', weatherCount: 700,
   });
   const base = hills(10, 1 / 260, 31);
   const ground = (x, z) => {
     let y = base(x, z);
     const d = Math.hypot(x, z);
-    y += Math.max(0, d - 160) * 0.6 * (0.6 + fbm(x / 400 + 3, z / 400 + 3, 4, 4, 2)); // peaks ring the steppe
+    const ridge = fbm(Math.atan2(z, x) / Math.PI * 0.5 + 0.5, d / 900, 6, 4, 2); // separate massifs, not a wall
+    y += Math.max(0, d - 150) * (0.25 + 1.1 * Math.max(0, ridge - 0.35)) ;
     // Ramiel: a lone dark peak to the north
     const rd = Math.hypot(x - 10, z + 230);
     y += Math.max(0, 140 - rd) * 1.3;
     // the sheep pass: a valley cut east
     if (x > 90) y -= Math.max(0, 30 - Math.abs(z - 20)) * 0.6 * Math.min(1, (x - 90) / 40);
+    const high = Math.max(0, y - 12);
+    y += high * 0.35 * (fbm(x / 40 + 7, z / 40 + 7, 8, 5, 9) - 0.5) * 2; // scree and ridges on the slopes
     return y * Math.min(1, 0.25 + d / 120);
   };
   R.ground = (x, z) => (Math.abs(x) > 300 || Math.abs(z) > 300 ? null : ground(x, z));
@@ -38,7 +41,7 @@ export function windhaven(ctx) {
   };
 
   // steppe grass, bent by the wind that never stops
-  const sway = grassField(R.root, { ground, area: [-110, 110, -100, 120], count: 30000, seed: 52, color: 0xc8b890, height: 0.55,
+  const sway = grassField(R.root, { ground, area: [-110, 110, -100, 120], count: 34000, seed: 52, color: 0xc8b088, height: 0.55,
     avoid: (x, z) => Math.hypot(x, z) < 13 || ground(x, z) > 22 });
   R.updaters.push((dt, t) => sway(t * 1.8));
 

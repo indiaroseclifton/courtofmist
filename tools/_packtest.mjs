@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'] });
+const p = await b.newPage();
+const errs = [];
+p.on('pageerror', e => errs.push(String(e)));
+p.on('requestfinished', r => { if (/json$/.test(r.url())) console.log('loaded', r.url().split('/').slice(-2).join('/')); });
+await p.goto('http://localhost:5288/play.html?test&q=low');
+await p.waitForFunction(() => window.__ready, null, { timeout: 120000 });
+await p.waitForTimeout(8000);
+console.log('env set:', await p.evaluate(() => !!window.__game.ctx.scene.environment), 'errors:', errs);
+await b.close();

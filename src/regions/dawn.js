@@ -36,7 +36,7 @@ export function dawnInfirmary(ctx) {
     R.updaters.push((dt, t) => { w.material.uniforms.time.value = t * 0.4; });
   });
 
-  const sway = grassField(R.root, { ground: (x, z) => ground(x, z), area: [-80, 80, -120, 28], count: 18000, seed: 102, color: 0xe0d0b8,
+  const sway = grassField(R.root, { ground: (x, z) => ground(x, z), area: [-80, 80, -120, 28], count: 20000, seed: 102, color: 0xb8b090,
     avoid: (x, z) => Math.abs(x) < 26 && z > -36 && z < 14 });
   R.updaters.push((dt, t) => sway(t));
 
@@ -65,7 +65,7 @@ export function dawnInfirmary(ctx) {
   R.places = {
     terrace: { pos: v3(0, TOP, 18), heading: Math.PI },
     court: { pos: v3(0, TOP, IZ), heading: Math.PI },
-    shot: { pos: v3(-6, TOP, IZ + 6), heading: 0.4, yaw: Math.PI + 0.35, pitch: 0.06 },
+    shot: { pos: v3(-8, TOP, 22), heading: Math.PI + 0.2, yaw: 0.45, pitch: 0.1 },
   };
   return R;
 }

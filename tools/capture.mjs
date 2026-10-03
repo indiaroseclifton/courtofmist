@@ -7,7 +7,8 @@ import { mkdirSync } from 'node:fs';
 const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args.splice(i, 2)[1] : d; };
 const w = opt('--w', '2560'), h = opt('--h', '1440'), out = opt('--out', 'docs/shots'), warm = opt('--warm', '90');
-const shots = args.length ? args : ['market', 'boat', 'stairs', 'summons', 'table', 'slips'];
+const REGIONS = ['velaris', 'mortal_village', 'spring_manor', 'under_mountain', 'hewn_city', 'the_middle', 'windhaven', 'adriata', 'autumn_forest', 'winter_glasshouse', 'dawn_infirmary', 'day_library'];
+const shots = args.length ? args : [...REGIONS.map((r) => `region:${r}`), 'market', 'boat', 'stairs', 'summons', 'table', 'journal', 'slips'];
 mkdirSync(out, { recursive: true });
 
 const server = await createServer({ server: { port: 5199, hmr: false, watch: null }, logLevel: 'error' });
@@ -22,9 +23,9 @@ for (const shot of shots) {
   page.on('pageerror', (e) => console.error(`[${shot}]`, e.message));
   const t0 = Date.now();
   await page.goto(`http://localhost:5199/?shot=${shot}&w=${w}&h=${h}&warm=${warm}`, { waitUntil: 'commit', timeout: 600000 });
-  await page.waitForFunction(() => window.__ready === true, null, { timeout: 600000 });
+  await page.waitForFunction(() => window.__ready === true || window.__failed, null, { timeout: 900000 });
   await page.waitForTimeout(800); // fonts and DOM transitions
-  await page.screenshot({ path: `${out}/${shot}.png`, timeout: 300000 });
+  await page.screenshot({ path: `${out}/${shot.replace('region:', '')}.png`, timeout: 300000 });
   console.log(`${shot}: ${((Date.now() - t0) / 1000).toFixed(1)}s`);
   await page.close();
 }

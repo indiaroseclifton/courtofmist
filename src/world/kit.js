@@ -194,18 +194,21 @@ export function roses(parent, spots, { colors = [0x8a0f1e, 0xb02a3a, 0xd8a0a8], 
 let tuftTex = null;
 export function grassField(parent, { ground, area, count = 20000, seed = 9, color = 0xffffff, avoid = () => false, height = 0.45 }) {
   if (!tuftTex) {
-    const cv = document.createElement('canvas'); cv.width = 256; cv.height = 128;
+    const cv = document.createElement('canvas'); cv.width = 512; cv.height = 256;
     const g = cv.getContext('2d');
-    for (let i = 0; i < 90; i++) {
-      const x = Math.random() * 256, h = 50 + Math.random() * 78, lean = (Math.random() - 0.5) * 30;
-      const shade = 60 + Math.random() * 70;
-      g.strokeStyle = `rgb(${shade * 0.55 | 0},${shade | 0},${shade * 0.35 | 0})`;
-      g.lineWidth = 1.5 + Math.random() * 2;
-      g.beginPath(); g.moveTo(x, 128); g.quadraticCurveTo(x + lean * 0.3, 128 - h * 0.6, x + lean, 128 - h); g.stroke();
+    for (let i = 0; i < 260; i++) {
+      // blades taper from the root; heights vary so the tuft has a ragged top, not a card edge
+      // roots bunched at the centre, blades fanning outward: a tuft, not a hedge
+      const gauss = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+      const x = 256 + gauss * 70, h = 40 + Math.pow(Math.random(), 0.7) * 210, lean = (x - 256) * 1.6 + (Math.random() - 0.5) * 50;
+      const v = 70 + Math.random() * 90, dry = Math.random() < 0.3;
+      g.fillStyle = dry ? `rgb(${v * 0.95 | 0},${v * 0.85 | 0},${v * 0.5 | 0})` : `rgb(${v * 0.62 | 0},${v * 0.78 | 0},${v * 0.38 | 0})`;
+      const w = 1.2 + Math.random() * 2.2;
+      g.beginPath(); g.moveTo(x - w, 256); g.quadraticCurveTo(x + lean * 0.35, 256 - h * 0.55, x + lean, 256 - h); g.quadraticCurveTo(x + lean * 0.35 + w * 0.4, 256 - h * 0.55, x + w, 256); g.fill();
     }
     tuftTex = new THREE.CanvasTexture(cv); tuftTex.colorSpace = THREE.SRGBColorSpace;
   }
-  const quads = [0, 1, 2].map((k) => new THREE.PlaneGeometry(0.6, height).translate(0, height / 2, 0).rotateY((k / 3) * Math.PI));
+  const quads = [0, 1, 2].map((k) => new THREE.PlaneGeometry(0.7, height).translate(0, height / 2, 0).rotateY((k / 3) * Math.PI + 0.3));
   const geo = mergeGeometries(quads.map((q) => q.toNonIndexed()));
   const mat = new THREE.MeshStandardMaterial({ map: tuftTex, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 0.9, color });
   mat.onBeforeCompile = (sh) => {

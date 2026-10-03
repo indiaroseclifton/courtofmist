@@ -72,6 +72,17 @@ export function emissive(color, intensity = 4) {
   return new THREE.MeshStandardMaterial({ color: 0x000000, emissive: color, emissiveIntensity: intensity });
 }
 
+/** A binary file shipped as base64 JSON, for hosts that only serve web media types. */
+async function unpack(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(url);
+  const { b64 } = await r.json();
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out.buffer;
+}
+
 // ---------------------------------------------------------------- HDR environments
 const envs = new Map();
 let pmrem = null;
@@ -80,13 +91,22 @@ export function loadEnv(renderer, name) {
   if (!envs.has(name)) {
     envs.set(name, new Promise((resolve) => {
       const fin = track();
-      new HDRLoader().load(`${BASE}hdr/${name}.hdr`, (tex) => {
+      const done = (tex) => {
         fin();
+        if (!tex) { resolve(null); return; }
         tex.mapping = THREE.EquirectangularReflectionMapping;
         const rt = pmrem.fromEquirectangular(tex);
         tex.dispose();
         resolve(rt.texture);
-      }, undefined, () => { fin(); resolve(null); });
+      };
+      new HDRLoader().load(`${BASE}hdr/${name}.hdr`, done, undefined, () => unpack(`${BASE}hdr/${name}.hdr.json`).then((buf) => {
+        // hosts that will not serve .hdr get a base64 copy; parse it the way HDRLoader would
+        const d = new HDRLoader().parse(buf);
+        const tex = new THREE.DataTexture(d.data, d.width, d.height, THREE.RGBAFormat, d.type);
+        tex.colorSpace = THREE.LinearSRGBColorSpace; tex.minFilter = tex.magFilter = THREE.LinearFilter;
+        tex.generateMipmaps = false; tex.flipY = true; tex.needsUpdate = true;
+        done(tex);
+      }).catch(() => done(null)));
     }));
   }
   return envs.get(name);
@@ -99,7 +119,9 @@ export function loadModel(name) {
   if (!models.has(name)) {
     models.set(name, new Promise((resolve) => {
       const fin = track();
-      gltfLoader.load(`${BASE}models/${name}.glb`, (g) => { fin(); resolve(g); }, undefined, () => { fin(); resolve(null); });
+      const ok = (g) => { fin(); resolve(g); }, fail = () => { fin(); resolve(null); };
+      gltfLoader.load(`${BASE}models/${name}.glb`, ok, undefined, () => unpack(`${BASE}models/${name}.glb.json`)
+        .then((buf) => gltfLoader.parse(buf, `${BASE}models/`, ok, fail)).catch(fail));
     }));
   }
   return models.get(name);

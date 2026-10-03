@@ -10,7 +10,7 @@ export function adriata(ctx) {
   const sunDir = new THREE.Vector3(-0.2, 0.16, 0.95).normalize(); // low over the sea
   const R = makeRegion('adriata', 'Adriata', {
     sky: 'golden', sunDir, sunColor: 0xffc08a, sunIntensity: 3.0, hemi: [0x8aa8d0, 0x6a5040, 0.7],
-    fog: [0xd8b8a0, 0.0022], hdr: 'venice_sunset_1k', envIntensity: 1.0, exposure: 0.8,
+    fog: [0xc8a088, 0.0014], hdr: 'venice_sunset_1k', envIntensity: 0.8, exposure: 0.72,
     lightColor: 0xffb070, lightIntensity: 6,
   });
   const QUAY = 1.6;
@@ -95,7 +95,7 @@ export function adriata(ctx) {
   R.places = {
     quay: { pos: v3(-60, QUAY, -2), heading: 0 },
     hall: { pos: v3(20, 0, -26), heading: Math.PI },
-    shot: { pos: v3(12, QUAY, 26), heading: 0.3, yaw: Math.PI + 0.5, pitch: 0.08 },
+    shot: { pos: v3(10, QUAY, 24), heading: Math.PI + 0.25, yaw: 0.35, pitch: 0.1 },
   };
   return R;
 }
