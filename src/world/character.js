@@ -2,6 +2,7 @@
 // wings; townsfolk share the same rig with lighter detail.
 import * as THREE from 'three';
 import * as T from './textures.js';
+import { bodyGeometry, bodyMaterial, eyeMaterial, hairCards } from './bodyMesh.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 
@@ -44,7 +45,7 @@ function combedHair() {
   if (combed) return combed;
   const c = document.createElement('canvas'); c.width = 512; c.height = 256;
   const g = c.getContext('2d');
-  g.fillStyle = '#5a5a5a'; g.fillRect(0, 0, 512, 256);
+  g.fillStyle = '#a09c98'; g.fillRect(0, 0, 512, 256);
   for (let i = 0; i < 2600; i++) {
     const x = Math.random() * 512, l = 40 + Math.random() * 216;
     const v = 60 + Math.random() * 150;
@@ -70,18 +71,32 @@ function limb(r0, r1, len, material) {
 
 // Lathe a body section from a radius profile [[y, r], ...]. sx/sz flatten it front-to-back.
 function lathe(profile, material, sx = 1, sz = 0.72) {
-  const g = new THREE.LatheGeometry(profile.map(([y, r]) => new THREE.Vector2(r, y)), 28);
+  const g = new THREE.LatheGeometry(profile.map(([y, r]) => new THREE.Vector2(r, y)), 72);
   g.scale(sx, 1, sz);
   const m = new THREE.Mesh(g, material);
   m.castShadow = m.receiveShadow = true;
   return m;
 }
 
+const lidMat = (tone) => mat(`lid${tone}`, () => new THREE.MeshStandardMaterial({ color: new THREE.Color(tone).multiplyScalar(0.8), roughness: 0.6 }));
+
+// Rest-pose joint positions in body space (right side), matching the groups buildHuman makes.
+let REST = null;
+function restJoints() {
+  if (REST) return REST;
+  const t = 0.1, sh = [0.19, 1.4, 0];
+  const dir = [Math.sin(t), -Math.cos(t), 0];
+  const el = sh.map((v, i) => v + dir[i] * 0.29), wr = el.map((v, i) => v + dir[i] * 0.265);
+  REST = { sh, el, wr, hand: wr.map((v, i) => v + dir[i] * 0.085), tip: wr.map((v, i) => v + dir[i] * 0.17),
+    hip: [0.085, 0.9, 0], kn: [0.085, 0.48, 0], an: [0.085, 0.08, 0], headC: [0, 1.61, 0] };
+  return REST;
+}
+
 export function buildHuman(opt = {}) {
   const o = {
     skin: 0xd8a88a, shirt: 0xe4ddcf, vest: 0x4a2e1c, trousers: 0x2b2722, boots: 0x2a1d14,
     hair: 0x6b4a2c, hairLen: 0.32, height: 1.68, strands: false, bow: false, wings: false,
-    vestKind: 'leather', shirtKind: 'linen', robe: null, mask: null, ...opt,
+    vestKind: 'leather', shirtKind: 'linen', robe: null, mask: null, sleeve: opt.robe ? 'long' : 'rolled', ...opt,
   };
   const s = o.height / 1.68;
   const root = new THREE.Group();
@@ -89,87 +104,73 @@ export function buildHuman(opt = {}) {
   body.scale.setScalar(s);
   root.add(body);
 
-  const skin = skinMat(o.skin);
-  const shirt = clothMat('shirt', o.shirt, o.shirtKind);
-  const vest = clothMat('vest', o.vest, o.vestKind);
-  const trousers = clothMat('trousers', o.trousers, 'linen');
-  const boots = clothMat('boots', o.boots, 'leather');
 
   const hips = new THREE.Group(); hips.position.y = 0.94; body.add(hips);
-  const pelvis = lathe([[-0.12, 0.13], [-0.05, 0.165], [0.05, 0.15], [0.1, 0.13]], trousers);
-  hips.add(pelvis);
-
   const spine = new THREE.Group(); spine.position.y = 0.08; hips.add(spine);
   const chest = new THREE.Group(); chest.position.y = 0.16; spine.add(chest);
-  // shirt torso, with the vest a little proud of it
-  spine.add(lathe([[0, 0.13], [0.12, 0.125], [0.24, 0.145], [0.34, 0.155], [0.42, 0.12], [0.46, 0.06]], shirt));
-  spine.add(lathe([[-0.02, 0.142], [0.12, 0.138], [0.24, 0.158], [0.33, 0.163], [0.37, 0.14]], vest, 1.02, 0.76));
-  // shirt tail below the vest: lags behind on the move
-  const hem = lathe([[-0.16, 0.16], [-0.06, 0.15], [0.0, 0.14]], shirt, 1, 0.78);
-  hem.position.y = 0.02; hips.add(hem);
-  if (o.robe) {
-    const robe = lathe([[-0.94, 0.34], [-0.6, 0.26], [-0.2, 0.18], [0.1, 0.16], [0.42, 0.15], [0.47, 0.05]], clothMat('robe', o.robe, 'silk'), 1, 0.8);
-    hips.add(robe);
-  }
-
-  const neck = limb(0.045, 0.05, 0.1, skin); neck.rotation.x = Math.PI; neck.position.y = 0.42; spine.add(neck);
+  const hem = new THREE.Group(); hem.position.y = 0.02; hips.add(hem); // kept for the gait's shirt-tail lag
   const head = new THREE.Group(); head.position.y = 0.53; spine.add(head);
-  const skull = new THREE.Mesh(new THREE.SphereGeometry(0.098, 32, 24), skin);
-  skull.scale.set(0.9, 1.12, 1.0); skull.position.y = 0.06; skull.castShadow = true;
-  head.add(skull);
-  const jaw = new THREE.Mesh(new THREE.SphereGeometry(0.07, 24, 16), skin);
-  jaw.scale.set(1, 0.9, 1.1); jaw.position.set(0, 0.0, 0.025); head.add(jaw);
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.014, 0.04, 8), skin);
-  nose.rotation.x = Math.PI / 2 + 0.3; nose.position.set(0, 0.055, 0.1); head.add(nose);
-  const eyeM = mat('eye', () => new THREE.MeshPhysicalMaterial({ color: 0x1c2a22, roughness: 0.05, clearcoat: 1 }));
-  for (const sx of [-1, 1]) {
-    const e = new THREE.Mesh(new THREE.SphereGeometry(0.011, 12, 8), eyeM);
-    e.position.set(sx * 0.032, 0.075, 0.083); head.add(e);
-  }
-  if (o.mask) {
-    const mk = new THREE.Mesh(new THREE.SphereGeometry(0.104, 24, 12, -1.1, 2.2, 0.9, 0.9),
-      mat(`mask${o.mask}`, () => new THREE.MeshStandardMaterial({ color: o.mask, metalness: 0.9, roughness: 0.3 })));
-    mk.position.y = 0.04; mk.scale.set(0.95, 1.1, 1.05);
-    head.add(mk);
-  }
-  const hairMat = mat(`hair${o.hair}`, () => new THREE.MeshStandardMaterial({ color: o.hair, map: combedHair(), roughness: 0.55 }));
-  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.104, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.58), hairMat);
-  cap.scale.set(0.92, 1.12, 1.04); cap.position.set(0, 0.064, -0.006); cap.rotation.x = -0.25; head.add(cap);
-  if (!o.strands && o.hairLen > 0.1) {
-    const fall = lathe([[-o.hairLen, 0.07], [-o.hairLen * 0.5, 0.1], [0, 0.1], [0.05, 0.06]], hairMat, 1.1, 0.6);
-    fall.position.set(0, 0.06, -0.05); head.add(fall);
-  }
-
-  // arms
   const arms = [];
   for (const side of [-1, 1]) {
     const sh = new THREE.Group(); sh.position.set(side * 0.19, 0.38, 0); spine.add(sh);
-    const upper = limb(0.047, 0.04, 0.29, shirt); sh.add(upper);
     const elbow = new THREE.Group(); elbow.position.y = -0.29; sh.add(elbow);
-    // sleeves rolled to the elbow: forearms are skin
-    const cuff = limb(0.05, 0.047, 0.05, shirt); elbow.add(cuff);
-    const fore = limb(0.038, 0.03, 0.25, skin); elbow.add(fore);
-    const hand = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.09, 0.025), skin);
-    hand.position.y = -0.29; hand.castShadow = true; elbow.add(hand);
-    sh.rotation.z = side * 0.08;
+    sh.rotation.z = side * 0.1;
     arms.push({ sh, elbow, side });
   }
-
-  // legs
   const legs = [];
   for (const side of [-1, 1]) {
     const hip = new THREE.Group(); hip.position.set(side * 0.085, -0.04, 0); hips.add(hip);
-    const thigh = limb(0.075, 0.055, 0.42, trousers); hip.add(thigh);
     const knee = new THREE.Group(); knee.position.y = -0.42; hip.add(knee);
-    const shin = limb(0.052, 0.04, 0.4, trousers); knee.add(shin);
-    // Illyrian boots: knee-high, laced, a fold at the top
-    const boot = lathe([[-0.4, 0.045], [-0.3, 0.046], [-0.12, 0.058], [-0.04, 0.062], [0.0, 0.066], [0.02, 0.06]], boots, 1, 0.95);
-    knee.add(boot);
     const ankle = new THREE.Group(); ankle.position.y = -0.4; knee.add(ankle);
-    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.07, 0.24), boots);
-    foot.geometry.translate(0, -0.03, 0.05); foot.castShadow = true;
-    ankle.add(foot);
     legs.push({ hip, knee, ankle, side });
+  }
+
+  // one sculpted, skinned body (a coarser one for distance), bound to the groups above
+  const female = o.build ? o.build === 'f' : Math.random() < 0.5;
+  const J = restJoints();
+  const bones = [hips, spine, head, arms[0].sh, arms[0].elbow, arms[1].sh, arms[1].elbow,
+    legs[0].hip, legs[0].knee, legs[0].ankle, legs[1].hip, legs[1].knee, legs[1].ankle];
+  root.updateMatrixWorld(true);
+  const skeleton = new THREE.Skeleton(bones);
+  const bodyMat = bodyMaterial(o);
+  const lod = new THREE.LOD();
+  body.add(lod);
+  for (const [level, dist] of [[0, 0], [1, o.strands ? 1e9 : 16]]) {
+    const mesh = new THREE.SkinnedMesh(bodyGeometry(J, female, level), bodyMat);
+    mesh.castShadow = mesh.receiveShadow = true;
+    lod.addLevel(mesh, dist);
+    root.updateMatrixWorld(true);
+    mesh.bind(skeleton);
+  }
+  for (const sx of [-1, 1]) {
+    const e = new THREE.Mesh(new THREE.SphereGeometry(0.0122, 16, 12).rotateX(Math.PI / 2), eyeMaterial(o.eyes ?? 0x3a4a3a));
+    e.position.set(sx * 0.032, 0.072, 0.0815); head.add(e);
+    const lid = new THREE.Mesh(new THREE.SphereGeometry(0.0132, 16, 8, 0, Math.PI * 2, 0, 1.05).rotateX(0.5), lidMat(o.skin));
+    lid.position.copy(e.position); head.add(lid);
+  }
+  if (o.mask) {
+    const mk = new THREE.Mesh(new THREE.SphereGeometry(0.104, 32, 16, -1.1, 2.2, 0.95, 0.85),
+      mat(`mask${o.mask}`, () => new THREE.MeshStandardMaterial({ color: o.mask, metalness: 0.9, roughness: 0.3, side: THREE.DoubleSide })));
+    mk.position.set(0, 0.05, 0.008); mk.scale.set(0.98, 1.1, 1.28);
+    head.add(mk);
+  }
+  const hairMat = mat(`hair${o.hair}`, () => new THREE.MeshStandardMaterial({ color: o.hair, map: combedHair(), roughness: 0.55 }));
+  if (o.hairLen > 0.03) {
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.104, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.56), hairMat);
+    cap.scale.set(0.97, 1.12, 1.08); cap.position.set(0, 0.066, -0.014); cap.rotation.x = -0.72; head.add(cap);
+    head.add(hairCards(o.hair, o.hairLen, Math.round(o.hair % 997)));
+  }
+  if (o.robe) {
+    const robe = lathe([[-0.94, 0.36], [-0.6, 0.28], [-0.2, 0.2], [0.1, 0.18], [0.36, 0.175], [0.44, 0.1], [0.47, 0.05]], clothMat('robe', o.robe, 'silk'), 1, 0.82);
+    // hanging folds, deepening toward the hem
+    const rp = robe.geometry.attributes.position;
+    for (let i = 0; i < rp.count; i++) {
+      const x = rp.getX(i), y = rp.getY(i), z = rp.getZ(i), a = Math.atan2(z, x);
+      const k = 1 + Math.max(0, -y - 0.05) * 0.11 * (Math.sin(a * 9) + 0.4 * Math.sin(a * 23 + 1.3));
+      rp.setX(i, x * k); rp.setZ(i, z * k);
+    }
+    robe.geometry.computeVertexNormals();
+    hips.add(robe);
   }
 
   // bow across the back, quiver at the hip
@@ -344,7 +345,7 @@ class HairSim {
         const hx = L.x + vx / vl, hy = L.y + vy / vl, hz = L.z + vz / vl;
         const hl = Math.hypot(hx, hy, hz) || 1;
         const th = (tx * hx + ty * hy + tz * hz) / hl;
-        const spec = Math.pow(Math.sqrt(Math.max(0, 1 - th * th)), 80) * 0.12;
+        const spec = Math.pow(Math.sqrt(Math.max(0, 1 - th * th)), 80) * 0.05;
         const tl2 = tx * L.x + ty * L.y + tz * L.z;
         const diff = 0.25 + 0.35 * Math.sqrt(Math.max(0, 1 - tl2 * tl2));
         const along = k / (S - 1);

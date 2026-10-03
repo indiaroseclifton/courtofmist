@@ -3,6 +3,8 @@
 import * as THREE from 'three';
 import { STAIR, WATER_Y } from './world/velaris.js';
 import { whenLoaded } from './engine/assets.js';
+import { Person } from './game/npcs.js';
+import { look } from './game/cast.js';
 
 export async function runCapture(api, { shot, record, warm }) {
   const { ctx, frame, input, cam, player, state, ui } = api;
@@ -19,6 +21,26 @@ export async function runCapture(api, { shot, record, warm }) {
       const p = api.region.places.shot;
       cam.yaw = p.yaw ?? player.heading + Math.PI; cam.pitch = p.pitch ?? 0.1; cam.snap = true;
       if (id === 'spring_manor' || id === 'under_mountain') for (const h of api.region.hooded ?? []) h.rig.root.visible = false;
+      return;
+    }
+    if (name === 'cast' || name === 'portrait') {
+      // daylight on the Spring lawn: a close look at the people themselves
+      await ctx.travel('spring_manor', 'shot', { instant: true });
+      for (const h of api.region.hooded ?? []) h.rig.root.visible = false;
+      const h = player.heading;
+      cam.pitch = 0.04; cam.snap = true;
+      if (name === 'portrait') { cam.yaw = h + 0.35; cam.dist = 1.25; cam.shoulder = 0; return; }
+      cam.yaw = h + Math.PI; cam.dist = 5.2; cam.shoulder = 0; cam.pitch = 0.02;
+      ctx.feyre.root.visible = false; if (ctx.feyre.hair) ctx.feyre.hair.lines.visible = false;
+      const fx = Math.sin(h), fz = Math.cos(h), rx = Math.cos(h), rz = -Math.sin(h);
+      const who = ['rhysand', 'mor', 'cassian', 'nesta', 'lucien', 'elain'];
+      who.forEach((n, i) => {
+        const o = (i - (who.length - 1) / 2) * 0.95;
+        const x = player.pos.x + fx * 0.4 + rx * o, z = player.pos.z + fz * 0.4 + rz * o;
+        const p = new Person(api.region.root, look(n), new THREE.Vector3(x, api.region.ground(x, z) ?? 0, z), api.region);
+        p.heading = h + Math.PI + (i - 2.5) * 0.08; p.talking = i % 2 ? 0.6 : 0;
+        api.region.people.push(p);
+      });
       return;
     }
     const missions = await velaris();

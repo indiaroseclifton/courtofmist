@@ -8,7 +8,7 @@ const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args.splice(i, 2)[1] : d; };
 const w = opt('--w', '2560'), h = opt('--h', '1440'), out = opt('--out', 'docs/shots'), warm = opt('--warm', '90');
 const REGIONS = ['velaris', 'mortal_village', 'spring_manor', 'under_mountain', 'hewn_city', 'the_middle', 'windhaven', 'adriata', 'autumn_forest', 'winter_glasshouse', 'dawn_infirmary', 'day_library'];
-const shots = args.length ? args : [...REGIONS.map((r) => `region:${r}`), 'market', 'boat', 'stairs', 'summons', 'table', 'journal', 'slips'];
+const shots = args.length ? args : [...REGIONS.map((r) => `region:${r}`), 'cast', 'portrait', 'market', 'boat', 'stairs', 'summons', 'table', 'journal', 'slips'];
 mkdirSync(out, { recursive: true });
 
 const server = await createServer({ server: { port: 5199, hmr: false, watch: null }, logLevel: 'error' });

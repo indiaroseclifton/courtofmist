@@ -139,7 +139,7 @@ export function buildVelaris(scene, moonDir) {
 
   // ---------- materials ----------
   // 2K PBR sets (tools/gen_textures.py); the rain film on the setts is a clearcoat
-  const streetMat = pbr('setts', { repeat: [173, 40], normalScale: 1.2, physical: { clearcoat: 0.35, clearcoatRoughness: 0.25 } });
+  const streetMat = pbr('setts', { repeat: [173, 40], normalScale: 0.55, roughness: 1.6, physical: { clearcoat: 0.45, clearcoatRoughness: 0.2 } });
   const quayMat = pbr('ashlar', { repeat: [10, 2], color: 0x8a8580 });
   const atlas = facadeAtlas();
   const facade = (hex, emissive = 2.2) => new THREE.MeshStandardMaterial({

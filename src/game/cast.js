@@ -1,14 +1,14 @@
 // How the named people look. Original interpretations for a fan project; nothing here is
 // traced from any illustration. Passed to buildHuman().
 export const CAST = {
-  feyre: { skin: 0xe4b498, hair: 0x6e4a28, hairLen: 0.44, shirt: 0xbdb39f, vest: 0x4a2e1c, trousers: 0x2a2620, boots: 0x22170f, height: 1.68 },
+  feyre: { eyes: 0x5a7486, skin: 0xe4b498, hair: 0x6e4a28, hairLen: 0.44, shirt: 0xbdb39f, vest: 0x4a2e1c, trousers: 0x2a2620, boots: 0x22170f, height: 1.68 },
   nesta: { skin: 0xe8bca0, hair: 0x7a5530, hairLen: 0.2, shirt: 0x3a3a42, vest: 0x26262c, trousers: 0x1e1e22, boots: 0x18120e, robe: 0x34343c, height: 1.7 },
   elain: { skin: 0xecc4a8, hair: 0xa8803c, hairLen: 0.5, shirt: 0xd8b0b0, vest: 0xc89a9a, robe: 0xd8a8a8, height: 1.64 },
   father: { skin: 0xd8a88a, hair: 0x8a8a84, hairLen: 0.08, shirt: 0x6a6258, vest: 0x3a3228, height: 1.76 },
   tamlin: { skin: 0xe0b090, hair: 0xc8a050, hairLen: 0.2, shirt: 0x3a5a2a, vest: 0x5a4020, trousers: 0x3a2a1a, mask: 0xc8a040, height: 1.9 },
   lucien: { skin: 0xd8a080, hair: 0xa8301a, hairLen: 0.4, shirt: 0x6a2a1a, vest: 0x3a2014, trousers: 0x2a1a12, mask: 0x9a7040, height: 1.85 },
   alis: { skin: 0x8a6a4a, hair: 0x3a2a1a, hairLen: 0.15, shirt: 0x5a6a4a, vest: 0x4a3a28, robe: 0x5a5040, height: 1.6 },
-  rhysand: { skin: 0xd8a888, hair: 0x101014, hairLen: 0.12, shirt: 0x14141a, vest: 0x0c0c10, trousers: 0x0c0c10, boots: 0x0a0a0c, height: 1.92, wings: true },
+  rhysand: { eyes: 0x4a3a7a, skin: 0xd8a888, hair: 0x101014, hairLen: 0.12, shirt: 0x14141a, vest: 0x0c0c10, trousers: 0x0c0c10, boots: 0x0a0a0c, height: 1.92, wings: true },
   cassian: { skin: 0xa8784e, hair: 0x14100c, hairLen: 0.3, shirt: 0x2a2420, vest: 0x1a1612, trousers: 0x1a1612, height: 1.96, wings: true },
   azriel: { skin: 0xb88a68, hair: 0x101010, hairLen: 0.1, shirt: 0x161a20, vest: 0x0c0e12, trousers: 0x0c0e12, height: 1.9, wings: true },
   mor: { skin: 0xecc0a0, hair: 0xd8b058, hairLen: 0.5, shirt: 0x8a1a2a, vest: 0x6a1420, robe: 0x8a1a2a, height: 1.75 },
@@ -37,5 +37,9 @@ export const CAST = {
   autumnfolk: { skin: 0xe0b090, hair: 0x8a3a1a, hairLen: 0.3, shirt: 0x7a3a14, vest: 0x4a2410, trousers: 0x3a2010, height: 1.76 },
   winterfolk: { skin: 0xc8a080, hair: 0xe0e0e0, hairLen: 0.2, shirt: 0xc8d4dc, vest: 0x8aa0b0, trousers: 0x6a7a88, height: 1.76 },
 };
+
+// Body builds for the named; anonymous crowds are mixed at random.
+for (const n of ['feyre', 'nesta', 'elain', 'alis', 'mor', 'amren', 'amarantha', 'viviane', 'weaver', 'emerie', 'gwyn', 'queen', 'healer']) CAST[n].build = 'f';
+for (const n of Object.keys(CAST)) CAST[n].build ??= ['villager', 'autumnfolk', 'winterfolk', 'scribe', 'sailor'].includes(n) ? undefined : 'm';
 
 export const look = (name, extra = {}) => ({ ...CAST[name], ...extra });

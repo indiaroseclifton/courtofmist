@@ -71,17 +71,113 @@ function leafTexture(kind) {
   return t;
 }
 
+// A conifer branch seen from above: a twig, side twigs, needles; snow lies along the tops.
+const branchTextures = new Map();
+function branchTexture(snow) {
+  if (branchTextures.has(snow)) return branchTextures.get(snow);
+  const W = 512, H = 256;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  const greens = ['#1c2e1c', '#243a22', '#2e4a2a', '#18261a', '#355230'];
+  const needles = (x0, y0, x1, y1, len) => {
+    const n = Math.hypot(x1 - x0, y1 - y0) / 2.2, a = Math.atan2(y1 - y0, x1 - x0);
+    for (let i = 0; i < n; i++) {
+      const t = i / n, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t;
+      for (const sd of [-1, 1]) {
+        const b = a + sd * (0.9 + Math.random() * 0.4), l = len * (0.7 + Math.random() * 0.5) * (1 - t * 0.35);
+        g.strokeStyle = greens[(Math.random() * greens.length) | 0];
+        g.lineWidth = 1.6;
+        g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(b) * l, y + Math.sin(b) * l); g.stroke();
+      }
+    }
+  };
+  const twigs = [];
+  for (let x = 20; x < W - 40; x += 34) {
+    const sd = (x / 34) % 2 ? 1 : -1, l = (110 - x * 0.16) * (0.8 + Math.random() * 0.3);
+    const a = sd * (0.75 + Math.random() * 0.25);
+    twigs.push([x, H / 2, x + Math.cos(a) * l, H / 2 + Math.sin(a) * l]);
+  }
+  for (const [x0, y0, x1, y1] of twigs) needles(x0, y0, x1, y1, 16);
+  needles(0, H / 2, W - 12, H / 2 + (Math.random() - 0.5) * 6, 20);
+  g.strokeStyle = '#3a2a1a'; g.lineWidth = 3; g.beginPath(); g.moveTo(0, H / 2); g.lineTo(W - 20, H / 2); g.stroke();
+  if (snow) {
+    for (const [x0, y0, x1, y1] of [[0, H / 2, W - 12, H / 2], ...twigs]) {
+      const n = Math.hypot(x1 - x0, y1 - y0) / 7;
+      for (let i = 0; i < n; i++) {
+        const t = i / n, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t;
+        if (Math.random() < 0.25) continue;
+        g.fillStyle = `rgba(${225 + Math.random() * 25},${232 + Math.random() * 20},${240 + Math.random() * 15},1)`;
+        g.beginPath(); g.ellipse(x, y, 6 + Math.random() * 8, 4 + Math.random() * 6, Math.random(), 0, Math.PI * 2); g.fill();
+      }
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  branchTextures.set(snow, t);
+  return t;
+}
+
+function conifer(r) {
+  const pos = [], nor = [], uv = [], col = [], idx = [];
+  const H = 11;
+  const card = (root, dir, side, len, wid, droop, shade) => {
+    // two segments, bending down toward the tip; normals bent outward for soft crowns
+    const base = pos.length / 3;
+    for (let k = 0; k <= 2; k++) {
+      const t = k / 2;
+      const c0 = new THREE.Vector3().copy(root).addScaledVector(dir, len * t);
+      c0.y -= droop * len * t * t;
+      const w = wid * (0.35 + 0.65 * Math.min(1, t * 1.6));
+      for (const sd of [-1, 1]) {
+        const p = c0.clone().addScaledVector(side, sd * w * 0.5);
+        pos.push(p.x, p.y, p.z);
+        const n = new THREE.Vector3(p.x, (p.y - H * 0.45) * 0.35 + 1.2, p.z).normalize();
+        nor.push(n.x, n.y, n.z);
+        uv.push(t, sd < 0 ? 0 : 1);
+        const v = shade * (0.45 + 0.55 * t);
+        col.push(v, v, v);
+      }
+    }
+    for (let k = 0; k < 2; k++) { const a = base + k * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+  };
+  const whorls = 17;
+  for (let i = 0; i < whorls; i++) {
+    const y = 1.6 + i * ((H - 2.2) / whorls);
+    const f = 1 - (y - 1.6) / (H - 1.2);
+    const n = Math.max(5, Math.round(7 + f * 5));
+    const a0 = r() * 6.28;
+    for (let b = 0; b < n; b++) {
+      const a = a0 + (b / n) * Math.PI * 2 + (r() - 0.5) * 0.4;
+      const len = 0.5 + 3.0 * Math.pow(f, 0.95) * (0.85 + r() * 0.3);
+      const dir = new THREE.Vector3(Math.cos(a), -0.12 - r() * 0.12, Math.sin(a)).normalize();
+      const side = new THREE.Vector3(-Math.sin(a), (r() - 0.5) * 1.1, Math.cos(a)).normalize();
+      card(new THREE.Vector3(Math.cos(a) * 0.1, y + (r() - 0.5) * 0.3, Math.sin(a) * 0.1), dir, side, len, len * 0.95, 0.22, 0.62 + 0.38 * (1 - f));
+    }
+  }
+  // the leader: two crossed upright cards
+  for (const a of [0, Math.PI / 2]) {
+    const side = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
+    card(new THREE.Vector3(0, H - 1.9, 0), new THREE.Vector3(0, 1, 0), side, 1.9, 0.7, 0, 1);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  g.setIndex(idx);
+  return g;
+}
+
 const treeGeoms = new Map();
 function treeGeometry(kind) {
   if (treeGeoms.has(kind)) return treeGeoms.get(kind);
   const r = rand(kind.length * 97);
   const trunkParts = [], crownParts = [];
   if (kind === 'pine' || kind === 'snowpine') {
-    trunkParts.push(new THREE.CylinderGeometry(0.12, 0.28, 9, 8).translate(0, 4.5, 0));
-    for (let i = 0; i < 6; i++) {
-      const y = 2.5 + i * 1.25, rad = 2.6 - i * 0.38;
-      crownParts.push(new THREE.ConeGeometry(rad, 2.4, 10, 1, true).translate(0, y, 0));
-    }
+    trunkParts.push(new THREE.CylinderGeometry(0.06, 0.3, 10.5, 9).translate(0, 5.25, 0));
+    const out = { trunk: mergeGeometries(trunkParts.map((g) => g.toNonIndexed())), crown: conifer(r) };
+    treeGeoms.set(kind, out);
+    return out;
   } else {
     // a broadleaf: trunk, three limbs, and a crown of crossed leaf cards
     trunkParts.push(new THREE.CylinderGeometry(0.22, 0.42, 5, 9).translate(0, 2.5, 0));
@@ -120,13 +216,12 @@ export function forest(parent, { kind = 'summer', count = 200, area = [-100, 100
   }
   const trunkMat = pbr('bark', { repeat: [1, 3] });
   let crownMat;
-  if (kind === 'pine') crownMat = plain(0x1c2a1a, 0.9, { side: THREE.DoubleSide });
-  else if (kind === 'snowpine') crownMat = plain(0xc8d2d8, 0.7, { side: THREE.DoubleSide });
+  if (kind === 'pine' || kind === 'snowpine') crownMat = new THREE.MeshStandardMaterial({ map: branchTexture(kind === 'snowpine'), vertexColors: true, alphaTest: 0.38, side: THREE.DoubleSide, roughness: 0.85 });
   else crownMat = new THREE.MeshStandardMaterial({ map: leafTexture(kind), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.75 });
   const tm = shadow(new THREE.InstancedMesh(trunk, trunkMat, mats.length));
   const cm = shadow(new THREE.InstancedMesh(crown, crownMat, mats.length));
   mats.forEach((m, i) => { tm.setMatrixAt(i, m); cm.setMatrixAt(i, m); });
-  if (kind !== 'pine' && kind !== 'snowpine') cm.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: crownMat.map, alphaTest: 0.45 });
+  cm.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: crownMat.map, alphaTest: 0.45 });
   parent.add(tm, cm);
   return mats.map((m) => new THREE.Vector3().setFromMatrixPosition(m));
 }

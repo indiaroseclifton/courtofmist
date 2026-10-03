@@ -1,21 +1,30 @@
 # Court of Mist
 
-A third-person court-life game set in Prythian. This repository holds a **playable browser prototype** of one region, Velaris at night, together with the full game design in [`docs/DESIGN.md`](docs/DESIGN.md).
+A third-person court-life game set in Prythian, playable in the browser. The game has:
+
+- twelve regions
+- Feyre's three acts and Nesta's campaign
+- Solstice
+- non-combat side jobs
+- bargains kept as debts
+- winnowing and wings
+- a war table of seven courts
+
+The full design is in [`docs/DESIGN.md`](docs/DESIGN.md).
 
 > Non-commercial fan project. Prythian and its people belong to Sarah J. Maas. All dialogue here is original.
 
-![Walking the market on the south quay](docs/shots/market.png)
+![The mortal village in winter](docs/shots/mortal_village.png)
 
 ## About fidelity
 
-The target look is Unreal Engine 5 in-engine footage: Lumen, Nanite, scanned skin with subsurface scatter, groom hair, Chaos cloth. **This prototype doesn't reach that.** It runs on WebGL (three.js), and every asset is generated from code, with no scans, sculpts or authored textures. What it does try to get right:
+The target look is Unreal Engine 5 in-engine footage. **This prototype doesn't reach that.** It runs on WebGL (three.js). What it does do:
 
-- the lens: a 35 mm-equivalent field of view, shallow depth of field on the subject, ACES filmic tone mapping, fine grain, and motion blur only across cuts
-- the light: moonlight, the Sidra's reflections, lit windows, lanterns, mist
-- the materials: wet setts with puddled joints, weathered ashlar, painted plaster, woven linen and silk, creased leather, candle smoke
-- the movement: a body with weight, plus simulated hair strands
-
-Faces and bodies are procedural mannequins, so nobody should mistake them for MetaHumans. The design document lists what a UE5 production would put in their place.
+- **Materials:** 2K tileable PBR sets (albedo, roughness, normal) baked from code.
+- **Lighting:** real HDRI image-based lighting (CC0, Poly Haven), and a CC0 glTF lantern.
+- **Lens:** a 35 mm-equivalent lens, depth of field, ACES tone mapping and film grain.
+- **People:** each is one sculpted, skinned body with a modelled face, pointed fae ears, eyes with lids, and hair cards. Feyre also has simulated hair strands. The body comes from a signed-distance sculpt and is polygonised at load, and its clothing is drawn per pixel. They are still stylised, not scanned MetaHumans.
+- **Foliage:** branch-card conifers with snow, leaf-card broadleaves, wind-blown grass tufts and rose bushes.
 
 ## Run it
 
@@ -37,19 +46,51 @@ A desktop GPU is recommended. Each frame draws the scene twice, once for the riv
 | Shift | run |
 | E | speak or act |
 | 1 2 3 | choose a reply |
+| Right / left mouse | draw the bow, loose or strike |
+| Q | the power, once you have it |
 | F | open your wings and fly, or land; Space and C to climb and descend |
+| J | journal |
 | B | bargain slips |
 | M | the painted map; click a red pin to winnow there |
 | Esc | put the paper away |
 
-## What's in the slice
+## What's in the game
 
-- **Pigment in the Sidra.** The painter on the Rainbow steps lost three jars of pigment in the river. Take the skiff from the dock steps and hook them up. Asking what it's worth to her gets you a bargain slip.
-- **A cousin at the Palace.** A masked Hewn City cousin is leaning on the silk sellers under the Palace arcade. Talk to the silk merchant first. You can't win this with a fight.
-- **Ten thousand steps.** A priestess at the foot of the cliff stair wants company, on foot and at her pace.
-- **The summons.** After your first job, a messenger from Keir finds you. You can refuse.
-
-Winnow marks are learned by walking to them. Trust appears on the map's ledger, and a court's army only marches with work done on that court's land.
+- **Regions:**
+  - the mortal village and cottage
+  - the Spring manor
+  - Under the Mountain (the trials)
+  - Velaris and the House of Wind
+  - the Hewn City
+  - Windhaven
+  - Adriata
+  - the Autumn forest
+  - the Winter glasshouse
+  - the Dawn infirmary
+  - the Day Court's library
+  - the Middle (story only)
+- **Story:**
+  - Act 1: the hunt to the third trial.
+  - Act 2: the bargain, Velaris, the Weaver and the Suriel.
+  - Act 3: Keir, the queens, the spy and the High Lords' audiences, ending at the war table.
+  - Nesta's campaign: the house, the ring, Emerie and the Blood Rite.
+  - The journal (J) tracks where you are.
+- **Side jobs:**
+  - re-thatching the cottage roof
+  - Emerie's clipped wings
+  - Adriata's nets
+  - reshelving in the Day library
+  - the Hewn City confession hour
+  - copying a ward
+  - escorting the Rainbow singer between regions
+  - Solstice gifts
+  - the Velaris pigment, cousin and stair jobs
+- **Systems:**
+  - Winnowing to marks you have walked to.
+  - Wings once you have them.
+  - Bargains as debts written on slips.
+  - Court trust that only moves for work done on that court's land.
+  - Combat: melee, a bow with arrow drop, and one earned power.
 
 ## Feyre's model
 
@@ -79,25 +120,32 @@ blender -b -P blender/velaris_quay.py -- --out docs/blender/velaris_quay.png
 ## Staged frames
 
 ```bash
-node tools/capture.mjs                     # 2560×1440 into docs/shots/
-node tools/capture.mjs boat --w 1280 --h 720
+node tools/capture.mjs                     # every region and key scene, 2560×1440, into docs/shots/
+node tools/capture.mjs region:hewn_city portrait --w 1280 --h 720
 ```
 
-Shots: `market`, `boat`, `stairs`, `summons`, `table`, `slips`. Each is a real gameplay frame, rendered after the simulation has settled.
+Each shot is a real gameplay frame, rendered after the simulation has settled.
 
 | | |
 |---|---|
-| ![](docs/shots/boat.png) | ![](docs/shots/stairs.png) |
-| ![](docs/shots/summons.png) | ![](docs/shots/table.png) |
+| ![](docs/shots/velaris.png) | ![](docs/shots/spring_manor.png) |
+| ![](docs/shots/hewn_city.png) | ![](docs/shots/windhaven.png) |
+| ![](docs/shots/adriata.png) | ![](docs/shots/autumn_forest.png) |
+| ![](docs/shots/winter_glasshouse.png) | ![](docs/shots/day_library.png) |
+| ![](docs/shots/dawn_infirmary.png) | ![](docs/shots/under_mountain.png) |
+| ![](docs/shots/cast.png) | ![](docs/shots/portrait.png) |
+| ![](docs/shots/market.png) | ![](docs/shots/table.png) |
 
 ## Layout
 
 ```
 src/core/      game rules and content (pure, tested)
-src/world/     Velaris, sky, procedural materials, the human rig and hair
-src/game/      player controller, townsfolk, side-job scripts
+src/regions/   the twelve regions
+src/world/     building kit, sky, Velaris, the sculpted body, rig and hair
+src/engine/    PBR texture, HDRI and model loading
+src/game/      player, townsfolk, story director, side jobs, combat
 src/render/    lens and film post-processing
 src/ui/        subtitles, bargain slips, the painted war table
-tools/         headless capture of staged frames
+tools/         texture baking, playtest, smoke test, capture and recording
 docs/          design document and shots
 ```
