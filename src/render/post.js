@@ -18,12 +18,13 @@ const FilmShader = {
     cut: { value: 0 },
     cutDir: { value: new THREE.Vector2(1, 0) },
     aspect: { value: 16 / 9 },
+    hurt: { value: 0 },
   },
   vertexShader: /* glsl */ `
     varying vec2 vUv;
     void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: /* glsl */ `
-    uniform sampler2D tDiffuse; uniform float time, grain, vignette, chroma, cut, aspect; uniform vec2 cutDir;
+    uniform sampler2D tDiffuse; uniform float time, grain, vignette, chroma, cut, aspect, hurt; uniform vec2 cutDir;
     varying vec2 vUv;
     float rand(vec2 co) { return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453); }
     void main() {
@@ -43,6 +44,10 @@ const FilmShader = {
         col = vec3(texture2D(tDiffuse, vUv + off).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - off).b);
       }
       col *= 1.0 - vignette * smoothstep(0.15, 0.95, r2);
+      // hurt: the edges bleed red and the colour drains out of the middle
+      float l0 = dot(col, vec3(0.299, 0.587, 0.114));
+      col = mix(col, vec3(l0), hurt * 0.55);
+      col = mix(col, vec3(l0 * 1.4, l0 * 0.25, l0 * 0.2) + vec3(0.06, 0.0, 0.0), hurt * smoothstep(0.1, 0.8, r2));
       // grain: luminance-weighted, strongest in the mids, as on stock
       float lum = dot(col, vec3(0.299, 0.587, 0.114));
       float n = rand(vUv * 1000.0 + fract(time * 13.7)) + rand(vUv * 731.0 - fract(time * 7.3)) - 1.0;
@@ -83,5 +88,6 @@ export function buildPost(renderer, scene, camera, w, h) {
       composer.render(dt);
     },
     setSize(w2, h2) { composer.setSize(w2, h2); film.uniforms.aspect.value = w2 / h2; },
+    setHurt(v) { film.uniforms.hurt.value = v; },
   };
 }

@@ -21,17 +21,23 @@
       <div id="ledger"></div>
     </div>
   </div>
+  <div id="journal" hidden></div>
+  <div id="ward" hidden></div>
   <div id="fade"></div>
 
   <div id="title">
     <h1>Court of Mist</h1>
-    <p class="sub">Velaris, a night in the open city</p>
+    <p class="sub">A game of Prythian: court life first, war second</p>
     <p class="keys">
-      mouse to look · W A S D to walk · shift to run · E to speak or act<br />
-      F to open your wings · B for bargain slips · M for the painted map · Esc to put things away
+      mouse to look · W A S D to walk · shift to run · E to speak or act · 1 2 3 to reply<br />
+      right mouse to draw the bow, left to loose or strike · Q for what burns in your hands, once you have it<br />
+      F for wings, once you have them · B bargain slips · J your journal · M the painted map · Esc to put things away
     </p>
-    <p class="begin">click to begin</p>
-    <p class="fine">A non-commercial fan prototype. Prythian and its people belong to Sarah J. Maas.</p>
+    <div class="begin-row">
+      <button class="begin" data-campaign="feyre">Begin as Feyre</button>
+      <button class="begin alt" data-campaign="nesta">Play Nesta's story</button>
+    </div>
+    <p class="fine">A non-commercial fan prototype. Prythian and its people belong to Sarah J. Maas. All dialogue is original.</p>
   </div>
 
   <script type="module" src="/src/main.js"></script>

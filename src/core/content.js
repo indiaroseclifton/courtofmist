@@ -28,6 +28,7 @@ export const REGIONS = {
   winter_glasshouse: { name: 'Winter glasshouse court', court: 'winter', flight: 'steppe', act: 3 },
   dawn_infirmary: { name: "Dawn's cliff infirmary", court: 'dawn', flight: 'city', act: 3 },
   day_library: { name: "Day's library", court: 'day', flight: 'city', act: 3 },
+  the_middle: { name: 'The Middle', court: null, flight: 'none', act: 2, storyOnly: true },
 };
 
 // Hybern is deliberately absent: it is across the western sea and never a playground.
@@ -36,12 +37,22 @@ export const WINNOW_MARKS = {
   rainbow_steps: { region: 'velaris', name: 'Rainbow — painted steps' },
   palace_thread: { region: 'velaris', name: 'Palace of Thread and Jewels' },
   sidra_dock: { region: 'velaris', name: 'Sidra skiff dock' },
-  stair_foot: { region: 'house_of_wind', name: 'Foot of the ten thousand steps' },
+  stair_foot: { region: 'velaris', name: 'Foot of the ten thousand steps' },
+  house_of_wind: { region: 'velaris', name: 'House of Wind terrace' },
   townhouse: { region: 'velaris', name: 'Townhouse door' },
-  windhaven_ring: { region: 'windhaven', name: 'Windhaven training ring' },
   cottage_gate: { region: 'mortal_village', name: 'Cottage gate' },
+  village_square: { region: 'mortal_village', name: 'Village well' },
+  family_estate: { region: 'mortal_village', name: 'The estate by the sea road' },
   manor_roses: { region: 'spring_manor', name: 'Rose garden gate' },
+  manor_steps: { region: 'spring_manor', name: 'Manor steps' },
+  hewn_gate: { region: 'hewn_city', name: 'Hewn City gate' },
+  keir_hall: { region: 'hewn_city', name: "Keir's hall" },
+  windhaven_ring: { region: 'windhaven', name: 'Windhaven training ring' },
+  emerie_shop: { region: 'windhaven', name: "Emerie's shop" },
   adriata_quay: { region: 'adriata', name: 'Adriata net quay' },
+  autumn_gate: { region: 'autumn_forest', name: 'Forest Court gate' },
+  glasshouse_door: { region: 'winter_glasshouse', name: 'Glasshouse doors' },
+  dawn_terrace: { region: 'dawn_infirmary', name: 'Infirmary terrace' },
   day_stacks: { region: 'day_library', name: 'Day library, east stacks' },
 };
 

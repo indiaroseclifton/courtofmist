@@ -1,5 +1,5 @@
 // Diegetic interface: subtitles, paper slips, a painted map on a table. No bars, no arrows.
-import { COURT_NAMES, WINNOW_MARKS } from '../core/content.js';
+import { COURT_NAMES, WINNOW_MARKS, REGIONS } from '../core/content.js';
 import { ARMY_TRUST } from '../core/state.js';
 
 const $ = (id) => document.getElementById(id);
@@ -13,6 +13,10 @@ export class UI {
     this.mapEl = $('map');
     this.ledgerEl = $('ledger');
     this.fadeEl = $('fade');
+    this.journalEl = $('journal');
+    this.wardEl = $('ward');
+    this.regionSpots = [];
+    this.ctx = null;
     this.choiceResolve = null;
     this.lineTimer = null;
     this.mapMarks = [];
@@ -28,7 +32,64 @@ export class UI {
     });
   }
 
-  get overlayOpen() { return !this.slipsEl.hidden || !this.tableEl.hidden; }
+  get overlayOpen() { return !this.slipsEl.hidden || !this.tableEl.hidden || !this.journalEl.hidden || !this.wardEl.hidden; }
+
+  closeAll() { this.slipsEl.hidden = true; this.tableEl.hidden = true; this.journalEl.hidden = true; }
+
+  // ---------------- the journal: Feyre's own hand ----------------
+  toggleJournal(story, force) {
+    const show = force ?? this.journalEl.hidden;
+    this.closeAll();
+    this.journalEl.hidden = !show;
+    if (show) this.journalEl.innerHTML = `<div class="page">${story.journal()}</div>`;
+  }
+
+  // ---------------- copying a ward: trace the line in one steady stroke ----------------
+  wardGame() {
+    return new Promise((resolve) => {
+      const el = this.wardEl;
+      el.hidden = false;
+      document.exitPointerLock?.();
+      el.innerHTML = '<div class="sheet"><canvas width="900" height="600"></canvas><p>Hold the mouse button and trace the grey line in one stroke. Stray too far and the ink smudges.</p></div>';
+      const cv = el.querySelector('canvas');
+      const g = cv.getContext('2d');
+      // the ward: a spiral knot of seven turns, drawn as a polyline
+      const pts = [];
+      for (let i = 0; i <= 420; i++) {
+        const t = i / 420, a = t * Math.PI * 6.2;
+        const r = 60 + t * 190 + Math.sin(a * 3) * 18;
+        pts.push([450 + Math.cos(a) * r, 300 + Math.sin(a) * r * 0.85]);
+      }
+      const hit = new Array(pts.length).fill(false);
+      const draw = () => {
+        g.fillStyle = '#e8dcc0'; g.fillRect(0, 0, 900, 600);
+        g.strokeStyle = 'rgba(80,60,40,.25)'; g.lineWidth = 14; g.lineCap = 'round'; g.lineJoin = 'round';
+        g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke();
+      };
+      draw();
+      let down = false, last = null;
+      const pos = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * 900 / r.width, (e.clientY - r.top) * 600 / r.height]; };
+      const end = (ok) => { el.hidden = true; el.innerHTML = ''; resolve(ok); };
+      cv.onmousedown = (e) => { down = true; last = pos(e); };
+      cv.onmousemove = (e) => {
+        if (!down) return;
+        const p = pos(e);
+        let best = 1e9, bi = -1;
+        pts.forEach(([x, y], i) => { const d = Math.hypot(x - p[0], y - p[1]); if (d < best) { best = d; bi = i; } });
+        g.strokeStyle = best < 16 ? '#1d1712' : '#5a1a10'; g.lineWidth = best < 16 ? 3 : 9;
+        g.beginPath(); g.moveTo(last[0], last[1]); g.lineTo(p[0], p[1]); g.stroke();
+        last = p;
+        if (best > 26) { down = false; setTimeout(() => end(false), 700); return; } // a smudge
+        for (let k = Math.max(0, bi - 3); k <= Math.min(pts.length - 1, bi + 3); k++) hit[k] = true;
+      };
+      cv.onmouseup = () => {
+        if (!down) return;
+        down = false;
+        const cover = hit.filter(Boolean).length / hit.length;
+        end(cover > 0.85);
+      };
+    });
+  }
 
   // A single spoken line. Resolves after a reading-speed delay.
   say(who, text, ms) {
@@ -76,9 +137,10 @@ export class UI {
   }
 
   // ---------------- the war table ----------------
-  toggleTable(state, force) {
+  toggleTable(state, force, ctx) {
+    if (ctx) this.ctx = ctx;
     const show = force ?? this.tableEl.hidden;
-    this.slipsEl.hidden = true;
+    this.slipsEl.hidden = true; this.journalEl.hidden = true;
     this.tableEl.hidden = !show;
     if (!show) return;
     this.paintMap(state);
@@ -175,7 +237,7 @@ export class UI {
     c.font = '20px "Homemade Apple", cursive'; c.fillStyle = '#2a1d12'; c.fillText('Velaris', ix + 14, iy + 30);
     const inset = {
       rainbow_steps: [ix + 90, iy + 205], palace_thread: [ix + 290, iy + 215], sidra_dock: [ix + 150, iy + 192],
-      stair_foot: [ix + 190, iy + 90], townhouse: [ix + 120, iy + 125],
+      stair_foot: [ix + 190, iy + 90], townhouse: [ix + 120, iy + 125], house_of_wind: [ix + 200, iy + 50],
     };
     this.mapMarks = [];
     for (const [id, [x, y]] of Object.entries(inset)) {
@@ -188,7 +250,28 @@ export class UI {
       this.mapMarks.push({ id, x, y, seen });
     }
     c.font = 'italic 15px "Cormorant Garamond", serif'; c.fillStyle = '#2a1d12';
-    c.fillText('click a red pin to winnow there', ix + 14, iy + ih - 14);
+    c.fillText('red wax: winnow there · ink seal: set out by road', ix + 14, iy + ih - 14);
+
+    // every region you could go: a wax pin if you have stood there, an ink seal if the road is open
+    const SPOTS = {
+      mortal_village: [640, 905], spring_manor: [830, 805], adriata: [560, 805], autumn_forest: [520, 575],
+      the_middle: [610, 515], under_mountain: [680, 465], day_library: [900, 495], dawn_infirmary: [1030, 610],
+      winter_glasshouse: [990, 345], windhaven: [690, 120], hewn_city: [800, 245], velaris: [770, 160],
+    };
+    this.regionSpots = [];
+    const story = this.ctx?.story;
+    for (const [id, [x, y]] of Object.entries(SPOTS)) {
+      const marks = Object.entries(WINNOW_MARKS).filter(([, m]) => m.region === id).map(([k]) => k);
+      const pin = marks.find((k) => state.canWinnow(k));
+      const open = story ? story.regionOpen(id) : true;
+      c.beginPath(); c.arc(x, y, pin ? 11 : 8, 0, Math.PI * 2);
+      if (pin && open) { c.fillStyle = '#8a1c14'; c.fill(); c.strokeStyle = '#3a0a06'; c.lineWidth = 2; c.stroke(); }
+      else if (open) { c.fillStyle = '#2a1d12'; c.fill(); }
+      else { c.setLineDash([3, 3]); c.strokeStyle = 'rgba(40,28,18,.5)'; c.lineWidth = 1.5; c.stroke(); c.setLineDash([]); }
+      c.font = '15px "Homemade Apple", cursive'; c.fillStyle = open ? '#2a1d12' : 'rgba(42,29,18,.45)';
+      c.fillText(REGIONS[id].name.replace(/ &.*$/, '').replace(/^The /, ''), x + 14, y + 5);
+      this.regionSpots.push({ id, x, y, pin, open });
+    }
   }
 
   mapClick(e) {
@@ -196,7 +279,12 @@ export class UI {
     const x = ((e.clientX - rect.left) / rect.width) * this.mapEl.width;
     const y = ((e.clientY - rect.top) / rect.height) * this.mapEl.height;
     for (const m of this.mapMarks) {
-      if (Math.hypot(m.x - x, m.y - y) < 28 && m.seen && this.onWinnow) this.onWinnow(m.id);
+      if (Math.hypot(m.x - x, m.y - y) < 28 && m.seen && this.onWinnow) { this.onWinnow(m.id); return; }
+    }
+    for (const s of this.regionSpots) {
+      if (Math.hypot(s.x - x, s.y - y) > 30 || !s.open) continue;
+      if (s.pin) this.onWinnow?.(s.pin); else this.onTravel?.(s.id);
+      return;
     }
   }
 }

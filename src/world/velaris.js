@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { Water } from 'three/examples/jsm/objects/Water.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import * as T from './textures.js';
+import { pbr, placeModel } from '../engine/assets.js';
 import { fbm } from './textures.js';
 
 export const RIVER_HALF = 14;
@@ -137,15 +138,9 @@ export function buildVelaris(scene, moonDir) {
     colliders.push({ minX: x - w / 2 - pad, maxX: x + w / 2 + pad, minZ: z - d / 2 - pad, maxZ: z + d / 2 + pad });
 
   // ---------- materials ----------
-  const cob = T.wetCobbles(512);
-  for (const t of Object.values(cob)) t.repeat.set(300, 69);
-  const streetMat = new THREE.MeshPhysicalMaterial({
-    ...cob, color: 0xffffff, roughness: 1, metalness: 0, normalScale: new THREE.Vector2(1.2, 1.2),
-    clearcoat: 0.35, clearcoatRoughness: 0.25, // rain film on stone
-  });
-  const ash = T.ashlar(512);
-  for (const t of Object.values(ash)) t.repeat.set(10, 2);
-  const quayMat = new THREE.MeshStandardMaterial({ ...ash, color: 0x8a8580, roughness: 1 });
+  // 2K PBR sets (tools/gen_textures.py); the rain film on the setts is a clearcoat
+  const streetMat = pbr('setts', { repeat: [173, 40], normalScale: 1.2, physical: { clearcoat: 0.35, clearcoatRoughness: 0.25 } });
+  const quayMat = pbr('ashlar', { repeat: [10, 2], color: 0x8a8580 });
   const atlas = facadeAtlas();
   const facade = (hex, emissive = 2.2) => new THREE.MeshStandardMaterial({
     map: atlas.map, roughnessMap: atlas.roughnessMap, roughness: 1, color: hex,
@@ -156,8 +151,7 @@ export function buildVelaris(scene, moonDir) {
   const stoneFacades = stoneTones.map((c) => facade(c));
   const rainbowFacades = rainbowTones.map((c) => facade(c, 2.6));
   const roofMat = new THREE.MeshStandardMaterial({ color: 0x2a2d33, roughness: 0.55, metalness: 0.1 });
-  const tim = T.timber(256);
-  const timberMat = new THREE.MeshStandardMaterial({ ...tim, roughness: 1 });
+  const timberMat = pbr('timber', { repeat: [1, 1] });
   const lampGlass = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffb36b, emissiveIntensity: 6 });
   const ironMat = new THREE.MeshStandardMaterial({ color: 0x15161a, roughness: 0.4, metalness: 0.8 });
 
@@ -301,9 +295,7 @@ export function buildVelaris(scene, moonDir) {
   // ---------- the Palace of Thread and Jewels ----------
   const palace = new THREE.Group();
   const PX = 52, PZ = RIVER_HALF + 26;
-  const marble = T.ashlar(512, [0.82, 0.8, 0.76]);
-  for (const t of Object.values(marble)) t.repeat.set(4, 2);
-  const palaceMat = new THREE.MeshStandardMaterial({ ...marble, roughness: 1 });
+  const palaceMat = pbr('marble', { repeat: [4, 2] });
   const hall = new THREE.Mesh(new THREE.BoxGeometry(40, 16, 24), palaceMat);
   hall.position.set(PX, 8, PZ + 6); hall.castShadow = hall.receiveShadow = true;
   palace.add(hall);
@@ -382,19 +374,23 @@ export function buildVelaris(scene, moonDir) {
     lanternSpots.push(new THREE.Vector3(sx, 1.7, sz - 1.6));
   }
 
-  // ---------- quay lanterns ----------
-  const postGeo = new THREE.CylinderGeometry(0.07, 0.1, 3.4, 8);
-  const boxGeo = new THREE.BoxGeometry(0.34, 0.5, 0.34);
+  // ---------- quay lanterns: the CC0 Khronos street lantern, cloned along both quays ----------
+  const lanternAt = [];
   for (let x = -220; x <= 220; x += 13) {
     for (const s of [1, -1]) {
       if (BRIDGES.some((b) => Math.abs(b - x) < 5)) continue;
       const z = s * (RIVER_HALF + 1.8);
-      const post = new THREE.Mesh(postGeo, ironMat); post.position.set(x, 1.7, z); post.castShadow = true;
-      const lamp = new THREE.Mesh(boxGeo, lampGlass); lamp.position.set(x, 3.55, z);
-      city.add(post, lamp);
-      lanternSpots.push(new THREE.Vector3(x, 3.5, z));
-      addCollider(x, z, 0.3, 0.3, 0.1);
+      // the lamp hangs 1.34 m out on its arm at 2.5 m; turn the arm out over the river
+      const ry = s > 0 ? Math.PI / 2 : -Math.PI / 2;
+      lanternAt.push({ x, z, ry });
+      lanternSpots.push(new THREE.Vector3(x + Math.cos(ry) * 1.34, 2.5, z - Math.sin(ry) * 1.34));
+      addCollider(x, z, 0.4, 0.4, 0.1);
     }
+  }
+  placeModel('lantern', city, lanternAt, 3.6);
+  const glowGeo = new THREE.SphereGeometry(0.09, 10, 8);
+  for (const p of lanternSpots.slice(-lanternAt.length)) {
+    const glow = new THREE.Mesh(glowGeo, lampGlass); glow.position.copy(p); city.add(glow);
   }
 
   // ---------- the dock and the skiff mooring ----------
@@ -424,9 +420,7 @@ export function buildVelaris(scene, moonDir) {
     cp.setZ(i, z);
   }
   cliffGeo.computeVertexNormals();
-  const rock = T.ashlar(256, [0.3, 0.29, 0.31]);
-  for (const t of Object.values(rock)) t.repeat.set(40, 18);
-  const cliff = new THREE.Mesh(cliffGeo, new THREE.MeshStandardMaterial({ ...rock, roughness: 1, color: 0x8a8a90 }));
+  const cliff = new THREE.Mesh(cliffGeo, pbr('granite', { repeat: [60, 26], normalScale: 1.5 }));
   cliff.receiveShadow = true; cliff.castShadow = true;
   city.add(cliff);
   // steps: instanced treads, 0.17 m rise each. The real stair is ten thousand of these.

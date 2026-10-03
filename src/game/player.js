@@ -1,13 +1,12 @@
 // Feyre's controller: inertia, turn-rate limits and ground following give her weight.
 import * as THREE from 'three';
-import { groundHeight, WATER_Y } from '../world/velaris.js';
 
 const WALK = 1.45, RUN = 4.3, FLY = 10;
 
 export class Player {
-  constructor(rig, colliders, state) {
+  constructor(rig, state) {
     this.rig = rig;
-    this.colliders = colliders;
+    this.region = null; // set by the region manager: ground(x,z), colliders, water
     this.state = state;
     this.pos = new THREE.Vector3(-30, 0, 20);
     this.vel = new THREE.Vector3();
@@ -22,7 +21,7 @@ export class Player {
 
   // Resolve circle-vs-box overlaps so she slides along walls.
   collide(p, r = 0.32) {
-    for (const b of this.colliders) {
+    for (const b of this.region.colliders) {
       if (p.x < b.minX - r || p.x > b.maxX + r || p.z < b.minZ - r || p.z > b.maxZ + r) continue;
       const cx = Math.max(b.minX, Math.min(p.x, b.maxX)), cz = Math.max(b.minZ, Math.min(p.z, b.maxZ));
       let dx = p.x - cx, dz = p.z - cz;
@@ -72,10 +71,13 @@ export class Player {
     this.turn = Math.atan2(Math.sin(this.heading - prevHeading), Math.cos(this.heading - prevHeading)) / Math.max(dt, 1e-4);
 
     const next = this.pos.clone().addScaledVector(this.vel, dt);
+    const groundHeight = (x, z) => this.region.ground(x, z);
+    const WATER_Y = this.region.water?.y ?? -50;
     if (this.boat) {
       // the skiff stays on the river, between the quay walls
-      next.z = Math.max(-12.2, Math.min(12.2, next.z));
-      next.x = Math.max(-220, Math.min(220, next.x));
+      const b = this.region.water.bounds; // [minX, maxX, minZ, maxZ]
+      next.z = Math.max(b[2], Math.min(b[3], next.z));
+      next.x = Math.max(b[0], Math.min(b[1], next.x));
       next.y = WATER_Y + 0.15;
       this.pos.copy(next);
       this.boat.position.set(next.x, WATER_Y + 0.05, next.z);
@@ -106,8 +108,9 @@ export class Player {
     this.collide(this.pos);
     const g = groundHeight(this.pos.x, this.pos.z);
     if (g === null) {
-      // landed somewhere impossible (e.g. wings gave out over the river): wade to the quay
-      this.pos.z = this.pos.z > 0 ? 15 : -15; this.pos.y = 0;
+      // landed somewhere impossible (e.g. wings gave out over water): back to safe ground
+      const safe = this.region.safeGround?.(this.pos) ?? this.region.spawn.pos;
+      this.pos.copy(safe);
     } else {
       const dy = g - this.pos.y;
       const ga = groundHeight(this.pos.x + Math.sin(this.heading) * 0.5, this.pos.z + Math.cos(this.heading) * 0.5) ?? g;

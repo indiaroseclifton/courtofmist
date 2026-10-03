@@ -59,18 +59,8 @@ export function setupMissions(ctx) {
     p.mesh = m;
   }
 
-  let busy = false;
-  const talk = async (npc, fn) => {
-    if (busy) return;
-    busy = true;
-    player.locked = true;
-    npc.lookAt = player.pos; npc.talking = 1;
-    ctx.dialogueWith(npc);
-    try { await fn(); } finally {
-      npc.talking = 0; ctx.dialogueWith(null); ui.clearSay(); player.locked = false; busy = false;
-      ctx.save();
-    }
-  };
+  const talk = ctx.talk; // shared with every region: locks the player, cuts to the two-shot
+
 
   // ---- Pigment in the Sidra ----
   add({
@@ -222,7 +212,7 @@ export function setupMissions(ctx) {
     if (state.flying) {
       stairJob.warned += dt;
       priestess.target = null;
-      if (!busy && stairJob.warned > 0.5 && stairJob.warned < 0.6) ui.say('Priestess', 'Wings away, please. We walk.');
+      if (!ctx.busy && stairJob.warned > 0.5 && stairJob.warned < 0.6) ui.say('Priestess', 'Wings away, please. We walk.');
       return;
     }
     if (ahead > 7) {
@@ -260,7 +250,8 @@ export function setupMissions(ctx) {
   // the summons comes once per save, not once per page load
   let summonsDone = state.declinedSummons > 0 || state.bargains.some((b) => b.id === 'keir_summons');
   function summonsTick() {
-    if (api.holdSummons || ui.overlayOpen || summonsDone || busy || state.completed.size === 0 || stairJob) return;
+    if (ctx.story && !ctx.story.flag('act2')) return;
+    if (api.holdSummons || ui.overlayOpen || summonsDone || ctx.busy || state.completed.size === 0 || stairJob) return;
     summonsDone = true;
     const spot = player.pos.clone().add(new THREE.Vector3(Math.sin(player.heading) * 6, 0, Math.cos(player.heading) * 6));
     messenger.pos.copy(spot.clone().add(new THREE.Vector3(8, 0, 0)));
@@ -298,7 +289,7 @@ export function setupMissions(ctx) {
       skiff.position.y = WATER_Y + 0.05 + Math.sin(t * 1.3) * 0.03;
       skiff.rotation.z = Math.sin(t * 0.9) * 0.025;
     },
-    get busy() { return busy; },
+    get busy() { return ctx.busy; },
   };
   return api;
 }

@@ -2,7 +2,7 @@
 // stop at stalls. Named people stand where their stories are and turn to face you.
 import * as THREE from 'three';
 import { buildHuman, animateHuman } from '../world/character.js';
-import { groundHeight, RIVER_HALF, BRIDGES, mulberry } from '../world/velaris.js';
+import { RIVER_HALF, BRIDGES, mulberry } from '../world/velaris.js';
 
 const SKINS = [0xe2b49a, 0xc98e6c, 0x9a6448, 0x6e4430, 0xf0c8b0, 0xb07656, 0x553222];
 const HAIR = [0x1a120c, 0x3a2416, 0x6b4a2c, 0xb08a58, 0x2a1a10, 0x8a8a8a, 0x101010];
@@ -10,8 +10,10 @@ const CLOTH = [0x2a2f3a, 0x4a2a2a, 0x1f3a3a, 0x3a3326, 0x5a4a6a, 0x23262b, 0x6a4
 const SILK = [0x7a1f2b, 0x1f3a6a, 0x2f5a46, 0x5a2a6a, 0x8a6a3a, 0x1a1a24];
 
 export class Person {
-  constructor(scene, opts, pos) {
+  constructor(scene, opts, pos, region) {
     this.rig = buildHuman(opts);
+    this.region = region ?? scene.userData.region; // whose ground this person walks on
+    this.hp = opts.hp ?? null;
     this.pos = pos.clone();
     this.heading = opts.heading ?? 0;
     this.speed = 0;
@@ -56,13 +58,20 @@ export class Person {
     accel = (this.speed - prev) / Math.max(dt, 1e-4);
     this.pos.x += Math.sin(this.heading) * this.speed * dt;
     this.pos.z += Math.cos(this.heading) * this.speed * dt;
+    const groundHeight = (x, z) => this.region.ground(x, z);
     const g = groundHeight(this.pos.x, this.pos.z);
-    if (g !== null) this.pos.y += (g - this.pos.y) * Math.min(1, dt * 10);
+    if (g !== null && !this.fixedY) this.pos.y += (g - this.pos.y) * Math.min(1, dt * 10);
     const ahead = groundHeight(this.pos.x + Math.sin(this.heading) * 0.5, this.pos.z + Math.cos(this.heading) * 0.5) ?? this.pos.y;
     const stairs = Math.max(0, Math.min(1, (ahead - this.pos.y) / 0.3)) * Math.min(1, this.speed);
     this.rig.root.position.copy(this.pos);
     this.rig.root.rotation.y = this.heading;
-    animateHuman(this.rig, dt, { speed: this.speed, accel, turn, t, talking: this.talking, stairs });
+    animateHuman(this.rig, dt, { speed: this.speed, accel, turn, t, talking: this.talking, stairs, flying: !!this.flying });
+    if (this.kneel) {
+      this.rig.hips.position.y = 0.5;
+      for (const L of this.rig.legs) { L.hip.rotation.x = -1.4 + (L.side > 0 ? 0 : 1.3); L.knee.rotation.x = L.side > 0 ? 1.6 : 2.4; }
+      this.rig.spine.rotation.x = 0.35; this.rig.head.rotation.x = 0.4;
+    }
+    if (this.downed) { this.rig.root.rotation.z = Math.PI / 2; this.rig.root.position.y = this.pos.y + 0.25; }
   }
 }
 

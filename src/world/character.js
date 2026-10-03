@@ -231,7 +231,8 @@ export function buildHuman(opt = {}) {
   let hair = null;
   if (o.strands) hair = new HairSim(head, o.hair, o.hairLen);
 
-  const rig = { root, body, hips, spine, chest, head, arms, legs, hem, wings, hair, phase: Math.random() * 6, lean: 0, bank: 0, wingOpen: 0 };
+  const rig = { root, body, hips, spine, chest, head, arms, legs, hem, wings, hair, phase: Math.random() * 6, lean: 0, bank: 0, wingOpen: 0,
+    wingsRest: o.wings && !o.strands ? 0.42 : 0 }; // Illyrians keep their wings folded on show
   return rig;
 }
 
@@ -394,7 +395,7 @@ export function animateHuman(rig, dt, { speed = 0, accel = 0, turn = 0, flying =
   // shirt tail trails a beat behind the hips
   rig.hem.rotation.x += ((-rig.lean * 0.5 - walk * 0.08 - run * 0.15) - rig.hem.rotation.x) * Math.min(1, dt * 3);
   if (rig.wings) {
-    rig.wingOpen += ((flying ? 1 : 0) - rig.wingOpen) * Math.min(1, dt * 3);
+    rig.wingOpen += ((flying ? 1 : rig.wingsRest) - rig.wingOpen) * Math.min(1, dt * 3);
     const w = rig.wingOpen;
     rig.wings.visible = w > 0.01;
     rig.wings.scale.setScalar(Math.max(0.001, w));

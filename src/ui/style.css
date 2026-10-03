@@ -57,6 +57,26 @@ html, body { margin: 0; height: 100%; background: #05070b; overflow: hidden; col
 .slip .seal { display: block; margin-top: 10px; font-size: 12px; color: #6d2418; }
 .slip.empty { font-family: var(--serif); font-style: italic; font-size: 20px; text-align: center; padding-top: 60px; }
 
+/* The journal: her own pages, in her own hand. */
+#journal { position: fixed; inset: 0; display: grid; place-items: center; background: radial-gradient(ellipse at center, rgba(0,0,0,.35), rgba(0,0,0,.8)); }
+#journal .page {
+  width: min(620px, 92vw); max-height: 86vh; overflow: auto; padding: 38px 44px; color: var(--ink);
+  font-family: var(--hand); font-size: 15px; line-height: 1.9;
+  background: radial-gradient(ellipse at 15% 10%, rgba(255,255,255,.35), transparent 60%), linear-gradient(175deg, var(--paper), var(--paper-shade));
+  box-shadow: 0 24px 60px rgba(0,0,0,.65); transform: rotate(-.6deg);
+}
+#journal h2 { font: 500 30px var(--serif); margin: 0 0 4px; }
+#journal h3 { font: 500 20px var(--serif); margin: 18px 0 4px; }
+#journal .act { font: italic 17px var(--serif); color: var(--ink-faded); margin: 0 0 12px; }
+#journal ol { padding-left: 1.2em; margin: 0; }
+#journal li.done { color: var(--ink-faded); text-decoration: line-through; text-decoration-color: rgba(30,20,15,.5); }
+#journal li.now span { display: block; font-size: 13px; color: var(--ink-faded); margin: 2px 0 8px; }
+#journal ul.courts { list-style: none; padding: 0; margin: 0; font-size: 13px; }
+#ward { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.7); }
+#ward .sheet { width: min(900px, 94vw); background: linear-gradient(175deg, var(--paper), var(--paper-shade)); padding: 18px; box-shadow: 0 24px 60px rgba(0,0,0,.6); }
+#ward canvas { width: 100%; height: auto; display: block; cursor: crosshair; }
+#ward p { color: var(--ink); font: italic 17px var(--serif); margin: 10px 4px 0; }
+
 /* The war table: you look down at a painted map on wood. */
 #table {
   position: fixed; inset: 0; display: grid; place-items: center; perspective: 1600px;
@@ -88,7 +108,10 @@ html, body { margin: 0; height: 100%; background: #05070b; overflow: hidden; col
 #title h1 { font-weight: 400; font-size: clamp(48px, 7vw, 112px); letter-spacing: .14em; margin: 0; text-transform: uppercase; }
 #title .sub { font-style: italic; font-size: clamp(16px, 1.6vw, 26px); opacity: .8; margin: .4em 0 2.4em; }
 #title .keys { font-size: clamp(13px, 1vw, 17px); opacity: .62; line-height: 1.9; }
-#title .begin { margin-top: 2em; font-style: italic; opacity: .85; animation: breathe 3.2s ease-in-out infinite; }
+#title .begin-row { display: flex; gap: 22px; margin-top: 2.2em; flex-wrap: wrap; justify-content: center; }
+#title .begin { font: italic 22px var(--serif); color: var(--sub); background: none; border: 1px solid rgba(239,232,218,.35); padding: 10px 26px; cursor: pointer; letter-spacing: .04em; }
+#title .begin:hover, #title .begin:focus-visible { border-color: rgba(239,232,218,.9); outline: none; }
+#title .begin.alt { opacity: .75; }
 #title .fine { position: absolute; bottom: 18px; font-size: 12px; opacity: .4; }
 @keyframes breathe { 50% { opacity: .35; } }
 
